@@ -14,6 +14,9 @@ export type AppSettings = {
   visible: boolean;
   launchAtStartup: boolean;
   animationIntensity: number;
+  dragBoundary: number;
+  fullDesktopOverlay: boolean;
+  compactOverlaySize: { width: number; height: number };
   shortcuts: ShortcutConfig;
   galleryBounds: {
     x: number;
@@ -23,6 +26,13 @@ export type AppSettings = {
   } | null;
 };
 
+export const DRAG_BOUNDARY_MIN = 0;
+export const DRAG_BOUNDARY_MAX = 160;
+export const COMPACT_OVERLAY_MIN_WIDTH = 240;
+export const COMPACT_OVERLAY_MIN_HEIGHT = 360;
+export const COMPACT_OVERLAY_MAX_WIDTH = 3840;
+export const COMPACT_OVERLAY_MAX_HEIGHT = 2160;
+
 const defaultSettings: AppSettings = {
   version: 1,
   selectedCharmId: 'nazar',
@@ -30,6 +40,9 @@ const defaultSettings: AppSettings = {
   visible: true,
   launchAtStartup: false,
   animationIntensity: 1,
+  dragBoundary: 8,
+  fullDesktopOverlay: true,
+  compactOverlaySize: { width: 420, height: 760 },
   shortcuts: {
     toggleCharm: 'CommandOrControl+Shift+D',
     performRitual: 'CommandOrControl+Shift+S',
@@ -71,6 +84,20 @@ function normalizeSettings(value: unknown): AppSettings {
     animationIntensity: isFiniteNumber(parsed.animationIntensity)
       ? Math.max(0, Math.min(2, parsed.animationIntensity))
       : defaultSettings.animationIntensity,
+    dragBoundary: isFiniteNumber(parsed.dragBoundary)
+      ? Math.round(Math.max(DRAG_BOUNDARY_MIN, Math.min(DRAG_BOUNDARY_MAX, parsed.dragBoundary)))
+      : defaultSettings.dragBoundary,
+    fullDesktopOverlay: typeof parsed.fullDesktopOverlay === 'boolean'
+      ? parsed.fullDesktopOverlay
+      : defaultSettings.fullDesktopOverlay,
+    compactOverlaySize: parsed.compactOverlaySize
+      && isFiniteNumber(parsed.compactOverlaySize.width)
+      && isFiniteNumber(parsed.compactOverlaySize.height)
+      ? {
+        width: Math.round(Math.max(COMPACT_OVERLAY_MIN_WIDTH, Math.min(COMPACT_OVERLAY_MAX_WIDTH, parsed.compactOverlaySize.width))),
+        height: Math.round(Math.max(COMPACT_OVERLAY_MIN_HEIGHT, Math.min(COMPACT_OVERLAY_MAX_HEIGHT, parsed.compactOverlaySize.height))),
+      }
+      : defaultSettings.compactOverlaySize,
     shortcuts: {
       toggleCharm: typeof parsed.shortcuts?.toggleCharm === 'string' ? parsed.shortcuts.toggleCharm : defaultSettings.shortcuts.toggleCharm,
       performRitual: typeof parsed.shortcuts?.performRitual === 'string' ? parsed.shortcuts.performRitual : defaultSettings.shortcuts.performRitual,

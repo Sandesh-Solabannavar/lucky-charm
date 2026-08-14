@@ -4,9 +4,15 @@ export type GalleryRendererElectronApi = {
   getCharms: () => Promise<Charm[]>;
   selectCharm: (id: string) => Promise<Charm | undefined>;
   setGalleryOpen: (open: boolean) => Promise<boolean>;
+  getFullDesktopOverlay: () => Promise<boolean>;
+  setFullDesktopOverlay: (enabled: boolean) => Promise<boolean>;
+  getCompactOverlaySize: () => Promise<{ width: number; height: number }>;
+  setCompactOverlaySize: (size: { width: number; height: number }) => Promise<{ width: number; height: number }>;
   onCharmsUpdated: (callback: (charms: Charm[]) => void) => void;
   onCharmSelected: (callback: (charm: Charm) => void) => void;
   onGalleryTab: (callback: (tab: 'gallery' | 'general' | 'about') => void) => void;
+  onFullDesktopOverlayUpdated: (callback: (enabled: boolean) => void) => void;
+  onCompactOverlaySizeUpdated: (callback: (size: { width: number; height: number }) => void) => void;
 };
 
 const css = `
@@ -107,8 +113,11 @@ html, body {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.3;
+  align-self: center;
+  text-align: center;
 }
 .badge {
+  align-self: center;
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 10px;
@@ -119,6 +128,7 @@ html, body {
   font-size: 11px;
   line-height: 1.4;
   color: rgba(216, 226, 255, 0.86);
+  text-align: center;
 }
 .panel-body {
   padding: 16px;
@@ -129,6 +139,54 @@ html, body {
 .panel-body h4 {
   margin: 0 0 8px;
   font-size: 13px;
+}
+.setting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 152px;
+  align-items: center;
+  gap: 16px;
+  max-width: 460px;
+  min-height: 68px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.11);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+}
+.setting-row + .setting-row {
+  margin-top: 8px;
+}
+.setting-label {
+  font-weight: 700;
+  color: #edf2ff;
+}
+.setting-help,
+.setting-status {
+  margin: 2px 0 0;
+  color: rgba(216, 226, 255, 0.78);
+  font-size: 11px;
+}
+.setting-status.error { color: #ffb3b3; }
+.setting-input {
+  width: 68px;
+  justify-self: end;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 7px;
+  background: rgba(8, 13, 31, 0.72);
+  color: #edf2ff;
+  padding: 7px 8px;
+  font: inherit;
+}
+.setting-inputs {
+  display: flex;
+  gap: 8px;
+  justify-self: end;
+}
+.setting-row.hidden { display: none; }
+.setting-toggle {
+  width: 18px;
+  height: 18px;
+  justify-self: end;
+  accent-color: #7ca5ff;
 }
 `;
 
@@ -144,10 +202,18 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
   style.textContent = css;
   document.head.appendChild(style);
 
-  const state: { charms: Charm[]; selected: Charm | null; tab: 'gallery' | 'general' | 'about' } = {
+  const state: {
+    charms: Charm[];
+    selected: Charm | null;
+    tab: 'gallery' | 'general' | 'about';
+    fullDesktopOverlay: boolean;
+    compactOverlaySize: { width: number; height: number };
+  } = {
     charms: [],
     selected: null,
     tab: 'gallery',
+    fullDesktopOverlay: true,
+    compactOverlaySize: { width: 420, height: 760 },
   };
 
   document.body.replaceChildren();
@@ -169,7 +235,39 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
 
   const panelGeneral = make('div', 'panel hidden');
   const generalBody = make('div', 'panel-body');
-  generalBody.innerHTML = '<h4>General</h4><p>Overlay behavior and shortcuts can be configured from this panel in the next milestone.</p>';
+  const generalTitle = make('h4', undefined, 'General');
+  const compactOverlaySizeRow = make('div', 'setting-row');
+  const compactOverlaySizeCopy = make('div');
+  const compactOverlaySizeLabel = make('div', 'setting-label', 'Compact overlay size');
+  const compactOverlaySizeHelp = make('p', 'setting-help', 'Width and height in pixels (minimum 240 x 360).');
+  const compactOverlaySizeStatus = make('p', 'setting-status');
+  compactOverlaySizeCopy.append(compactOverlaySizeLabel, compactOverlaySizeHelp, compactOverlaySizeStatus);
+  const compactOverlayInputs = make('div', 'setting-inputs');
+  const compactOverlayWidthInput = make('input', 'setting-input') as HTMLInputElement;
+  const compactOverlayHeightInput = make('input', 'setting-input') as HTMLInputElement;
+  for (const [input, min, max, label] of [
+    [compactOverlayWidthInput, '240', '3840', 'Overlay width in pixels'],
+    [compactOverlayHeightInput, '360', '2160', 'Overlay height in pixels'],
+  ] as const) {
+    input.type = 'number';
+    input.min = min;
+    input.max = max;
+    input.step = '1';
+    input.inputMode = 'numeric';
+    input.setAttribute('aria-label', label);
+  }
+  compactOverlayInputs.append(compactOverlayWidthInput, compactOverlayHeightInput);
+  compactOverlaySizeRow.append(compactOverlaySizeCopy, compactOverlayInputs);
+  const fullDesktopOverlayRow = make('div', 'setting-row');
+  const fullDesktopOverlayCopy = make('div');
+  const fullDesktopOverlayLabel = make('div', 'setting-label', 'Desktop-wide overlay');
+  const fullDesktopOverlayHelp = make('p', 'setting-help', 'Let the charm be dragged anywhere on the active monitor.');
+  fullDesktopOverlayCopy.append(fullDesktopOverlayLabel, fullDesktopOverlayHelp);
+  const fullDesktopOverlayInput = make('input', 'setting-toggle') as HTMLInputElement;
+  fullDesktopOverlayInput.type = 'checkbox';
+  fullDesktopOverlayInput.setAttribute('aria-label', 'Enable desktop-wide overlay');
+  fullDesktopOverlayRow.append(fullDesktopOverlayCopy, fullDesktopOverlayInput);
+  generalBody.append(generalTitle, fullDesktopOverlayRow, compactOverlaySizeRow);
   panelGeneral.append(generalBody);
 
   const panelAbout = make('div', 'panel hidden');
@@ -218,6 +316,41 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
     }
   }
 
+  function renderCompactOverlaySize() {
+    compactOverlayWidthInput.value = String(state.compactOverlaySize.width);
+    compactOverlayHeightInput.value = String(state.compactOverlaySize.height);
+  }
+
+  function renderFullDesktopOverlay() {
+    fullDesktopOverlayInput.checked = state.fullDesktopOverlay;
+    compactOverlaySizeRow.classList.toggle('hidden', state.fullDesktopOverlay);
+  }
+
+  const saveCompactOverlaySize = async () => {
+    const width = Number(compactOverlayWidthInput.value);
+    const height = Number(compactOverlayHeightInput.value);
+    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 240 || width > 3840 || height < 360 || height > 2160) {
+      compactOverlaySizeStatus.textContent = 'Enter whole pixels: width 240-3840, height 360-2160.';
+      compactOverlaySizeStatus.classList.add('error');
+      renderCompactOverlaySize();
+      return;
+    }
+    state.compactOverlaySize = await api.setCompactOverlaySize({ width, height });
+    compactOverlaySizeStatus.textContent = 'Saved.';
+    compactOverlaySizeStatus.classList.remove('error');
+    renderCompactOverlaySize();
+  };
+  compactOverlayWidthInput.addEventListener('change', () => void saveCompactOverlaySize());
+  compactOverlayHeightInput.addEventListener('change', () => void saveCompactOverlaySize());
+
+  fullDesktopOverlayInput.addEventListener('change', async () => {
+    state.fullDesktopOverlay = await api.setFullDesktopOverlay(fullDesktopOverlayInput.checked);
+    renderFullDesktopOverlay();
+    if (!state.fullDesktopOverlay) {
+      compactOverlayWidthInput.focus();
+    }
+  });
+
   tabGallery.addEventListener('click', () => setTab('gallery'));
   tabGeneral.addEventListener('click', () => setTab('general'));
   tabAbout.addEventListener('click', () => setTab('about'));
@@ -236,10 +369,27 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
     setTab(tab);
   });
 
-  void api.setGalleryOpen(true);
-  void api.getCharms().then((charms) => {
+  api.onFullDesktopOverlayUpdated((enabled) => {
+    state.fullDesktopOverlay = enabled;
+    renderFullDesktopOverlay();
+  });
+
+  api.onCompactOverlaySizeUpdated((size) => {
+    state.compactOverlaySize = size;
+    renderCompactOverlaySize();
+  });
+
+  void Promise.all([api.getCharms(), api.getFullDesktopOverlay(), api.getCompactOverlaySize()]).then(([
+    charms,
+    fullDesktopOverlay,
+    compactOverlaySize,
+  ]) => {
     state.charms = charms;
     state.selected = charms[0] ?? null;
+    state.fullDesktopOverlay = fullDesktopOverlay;
+    state.compactOverlaySize = compactOverlaySize;
     renderGrid();
+    renderCompactOverlaySize();
+    renderFullDesktopOverlay();
   });
 }

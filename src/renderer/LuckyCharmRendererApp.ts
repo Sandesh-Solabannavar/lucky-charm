@@ -15,6 +15,8 @@ export type RendererElectronApi = {
   triggerRitual: () => Promise<Charm>;
   moveWindow: (deltaX: number, deltaY: number) => Promise<boolean>;
   setOverlayInteractive: (interactive: boolean) => Promise<boolean>;
+  getDragBoundary: () => Promise<number>;
+  getFullDesktopOverlay: () => Promise<boolean>;
   toggleUndangle: () => Promise<boolean>;
   openSettings: () => Promise<boolean>;
   checkUpdates: () => Promise<UpdateStatus>;
@@ -27,6 +29,8 @@ export type RendererElectronApi = {
   onUndangleUpdated: (callback: (undangled: boolean) => void) => void;
   onSettingsOpened: (callback: () => void) => void;
   onUpdateStatus: (callback: (status: UpdateStatus) => void) => void;
+  onDragBoundaryUpdated: (callback: (dragBoundary: number) => void) => void;
+  onFullDesktopOverlayUpdated: (callback: (enabled: boolean) => void) => void;
 };
 
 const css = `
@@ -302,6 +306,8 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     attachmentOffset: number;
     threadLength: number;
     lastDragSample: { x: number; y: number; time: number } | null;
+    dragBoundary: number;
+    fullDesktopOverlay: boolean;
   } = {
     selected: null,
     undangled: false,
@@ -321,6 +327,8 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     attachmentOffset: 0,
     threadLength: 100,
     lastDragSample: null,
+    dragBoundary: 8,
+    fullDesktopOverlay: false,
   };
 
   document.body.replaceChildren();
@@ -398,6 +406,10 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   document.body.append(app);
 
   const anchor = { x: 260, y: 0 };
+
+  function updateAnchorPosition() {
+    anchor.x = state.fullDesktopOverlay ? Math.max(160, window.innerWidth - 160) : 260;
+  }
 
   function updateThreadViewport() {
     const width = Math.max(1, window.innerWidth);
@@ -628,6 +640,9 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   }
 
   async function init() {
+    state.dragBoundary = await api.getDragBoundary();
+    state.fullDesktopOverlay = await api.getFullDesktopOverlay();
+    updateAnchorPosition();
     const items = await api.getCharms();
     state.selected = items[0] ?? null;
     renderSelected();
@@ -651,8 +666,13 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     if (!state.draggingCharm) return;
     const x = event.clientX - state.dragPointerOffset.x;
     const y = event.clientY - state.dragPointerOffset.y;
-    state.physics.x = Math.max(20, Math.min(window.innerWidth - state.charmSize.width - 20, x));
-    state.physics.y = Math.max(40, Math.min(window.innerHeight - state.charmSize.height - 60, y));
+    const edgeInset = Math.min(
+      state.dragBoundary,
+      Math.max(0, (window.innerWidth - state.charmSize.width) / 2),
+      Math.max(0, (window.innerHeight - state.charmSize.height) / 2),
+    );
+    state.physics.x = Math.max(edgeInset, Math.min(window.innerWidth - state.charmSize.width - edgeInset, x));
+    state.physics.y = Math.max(edgeInset, Math.min(window.innerHeight - state.charmSize.height - edgeInset, y));
     if (state.lastDragSample) {
       const dt = Math.max(0.001, (event.timeStamp - state.lastDragSample.time) / 1000);
       state.physics.vx = clamp((state.physics.x - state.lastDragSample.x) / dt, -1400, 1400);
@@ -696,6 +716,17 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
 
   window.addEventListener('mousemove', (event) => {
     void syncOverlayInteractivity(event.clientX, event.clientY);
+  });
+
+  api.onDragBoundaryUpdated((dragBoundary) => {
+    state.dragBoundary = dragBoundary;
+  });
+
+  api.onFullDesktopOverlayUpdated((enabled) => {
+    state.fullDesktopOverlay = enabled;
+    updateAnchorPosition();
+    resetCharmToThreadRest();
+    layoutCharm();
   });
 
   menuUndangle.addEventListener('click', async () => {

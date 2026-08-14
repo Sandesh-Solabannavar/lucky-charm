@@ -6,6 +6,8 @@ export class DesktopWindow {
   private overlayInteractive = false;
   private displayId = '';
   private normalizedX = 0.85;
+  private fullDesktopOverlay = false;
+  private compactOverlaySize = { width: 420, height: 760 };
 
   constructor(
     private readonly electronWindow: ElectronWindow,
@@ -17,23 +19,34 @@ export class DesktopWindow {
     this.normalizedX = Math.max(0, Math.min(1, value));
   }
 
+  setFullDesktopOverlay(enabled: boolean) {
+    this.fullDesktopOverlay = enabled;
+    const window = this.electronWindow.currentMainOrFirst();
+    if (!window) return;
+    const [x = 0, y = 0] = window.getPosition();
+    this.applyBounds(window, screen.getDisplayNearestPoint({ x, y }));
+  }
+
+  setCompactOverlaySize(size: { width: number; height: number }) {
+    this.compactOverlaySize = size;
+    if (this.fullDesktopOverlay) return;
+    const window = this.electronWindow.currentMainOrFirst();
+    if (!window) return;
+    const [x = 0, y = 0] = window.getPosition();
+    this.applyBounds(window, screen.getDisplayNearestPoint({ x, y }));
+  }
+
   getDisplayId() {
     return this.displayId;
   }
 
   createMain() {
     const display = screen.getPrimaryDisplay();
-    const { x: displayX, y: displayY, width } = display.workArea;
     this.displayId = String(display.id);
-    const minX = displayX + 20;
-    const maxX = displayX + Math.max(20, width - 420 - 20);
-    const positionedX = Math.round(minX + (maxX - minX) * this.normalizedX);
+    const bounds = this.boundsForDisplay(display);
 
     const window = this.electronWindow.create({
-      width: 420,
-      height: 760,
-      x: positionedX,
-      y: displayY + 12,
+      ...bounds,
       frame: false,
       transparent: true,
       resizable: false,
@@ -61,6 +74,28 @@ export class DesktopWindow {
     });
 
     return window;
+  }
+
+  private applyBounds(window: Electron.BrowserWindow, display: Electron.Display) {
+    this.displayId = String(display.id);
+    window.setBounds(this.boundsForDisplay(display));
+  }
+
+  private boundsForDisplay(display: Electron.Display) {
+    const { x: displayX, y: displayY, width, height } = display.workArea;
+    if (this.fullDesktopOverlay) {
+      return { x: displayX, y: displayY, width, height };
+    }
+    const overlayWidth = Math.min(this.compactOverlaySize.width, width);
+    const overlayHeight = Math.min(this.compactOverlaySize.height, height);
+    const minX = displayX + 20;
+    const maxX = displayX + Math.max(20, width - overlayWidth - 20);
+    return {
+      width: overlayWidth,
+      height: overlayHeight,
+      x: Math.round(minX + (maxX - minX) * this.normalizedX),
+      y: displayY,
+    };
   }
 
   ensureMain() {
@@ -109,7 +144,7 @@ export class DesktopWindow {
     const maxX = displayX + Math.max(20, width - 420 - 20);
     const nextX = Math.max(minX, Math.min(maxX, x + deltaX));
 
-    window.setPosition(nextX, display.workArea.y + 12);
+    window.setPosition(nextX, display.workArea.y);
 
     const normalized = maxX === minX ? 0.5 : (nextX - minX) / (maxX - minX);
     this.normalizedX = Math.max(0, Math.min(1, normalized));

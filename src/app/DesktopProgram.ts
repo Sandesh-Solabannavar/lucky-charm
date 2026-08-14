@@ -45,6 +45,8 @@ export async function runDesktopProgram() {
     if (typeof initialX === 'number') {
       desktopWindow.setInitialNormalizedX(initialX);
     }
+    desktopWindow.setCompactOverlaySize(settings.compactOverlaySize);
+    desktopWindow.setFullDesktopOverlay(settings.fullDesktopOverlay);
 
     const galleryWindow = new DesktopGalleryWindow(
       electronWindow,
@@ -74,6 +76,8 @@ export async function runDesktopProgram() {
         return desktopWindow.isMainVisible();
       },
       moveCharm: (dx, dy) => desktopWindow.moveMain(dx, dy),
+      setFullDesktopOverlay: (enabled) => desktopWindow.setFullDesktopOverlay(enabled),
+      setCompactOverlaySize: (size) => desktopWindow.setCompactOverlaySize(size),
       setOverlayInteractive: (interactive) => desktopWindow.setOverlayInteractive(interactive),
       openGalleryWindow: (tab) => galleryWindow.open(tab),
       closeGalleryWindow: () => galleryWindow.close(),
@@ -94,6 +98,7 @@ export async function runDesktopProgram() {
       luckyCharmApp,
       electronApp,
       commands,
+      settingsStore,
     );
 
     electronApp.setAccessoryActivationPolicyOnMac();

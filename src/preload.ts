@@ -38,6 +38,11 @@ const electronApi: PreloadElectronApi = {
   triggerRitual: () => ipcRenderer.invoke('trigger-ritual') as Promise<Charm>,
   moveWindow: (deltaX: number, deltaY: number) => ipcRenderer.invoke('move-window', deltaX, deltaY) as Promise<boolean>,
   setOverlayInteractive: (interactive: boolean) => ipcRenderer.invoke('set-overlay-interactive', interactive) as Promise<boolean>,
+  getDragBoundary: () => ipcRenderer.invoke('get-drag-boundary') as Promise<number>,
+  getFullDesktopOverlay: () => ipcRenderer.invoke('get-full-desktop-overlay') as Promise<boolean>,
+  setFullDesktopOverlay: (enabled: boolean) => ipcRenderer.invoke('set-full-desktop-overlay', enabled) as Promise<boolean>,
+  getCompactOverlaySize: () => ipcRenderer.invoke('get-compact-overlay-size') as Promise<{ width: number; height: number }>,
+  setCompactOverlaySize: (size: { width: number; height: number }) => ipcRenderer.invoke('set-compact-overlay-size', size) as Promise<{ width: number; height: number }>,
   toggleUndangle: () => ipcRenderer.invoke('toggle-undangle') as Promise<boolean>,
   openSettings: () => ipcRenderer.invoke('open-settings') as Promise<boolean>,
   checkUpdates: () => ipcRenderer.invoke('check-updates') as Promise<{ status: string; message: string; version: string }>,
@@ -69,6 +74,15 @@ const electronApi: PreloadElectronApi = {
   onGalleryTab: (callback: (tab: 'gallery' | 'general' | 'about') => void) => {
     ipcRenderer.on('gallery-tab', (_event, tab) => callback(tab as 'gallery' | 'general' | 'about'));
   },
+  onDragBoundaryUpdated: (callback: (dragBoundary: number) => void) => {
+    ipcRenderer.on('drag-boundary-updated', (_event, dragBoundary) => callback(Number(dragBoundary)));
+  },
+  onFullDesktopOverlayUpdated: (callback: (enabled: boolean) => void) => {
+    ipcRenderer.on('full-desktop-overlay-updated', (_event, enabled) => callback(Boolean(enabled)));
+  },
+  onCompactOverlaySizeUpdated: (callback: (size: { width: number; height: number }) => void) => {
+    ipcRenderer.on('compact-overlay-size-updated', (_event, size) => callback(size as { width: number; height: number }));
+  },
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronApi);
@@ -93,6 +107,11 @@ declare global {
       triggerRitual: () => Promise<Charm>;
       moveWindow: (deltaX: number, deltaY: number) => Promise<boolean>;
       setOverlayInteractive: (interactive: boolean) => Promise<boolean>;
+      getDragBoundary: () => Promise<number>;
+      getFullDesktopOverlay: () => Promise<boolean>;
+      setFullDesktopOverlay: (enabled: boolean) => Promise<boolean>;
+      getCompactOverlaySize: () => Promise<{ width: number; height: number }>;
+      setCompactOverlaySize: (size: { width: number; height: number }) => Promise<{ width: number; height: number }>;
       toggleUndangle: () => Promise<boolean>;
       openSettings: () => Promise<boolean>;
       checkUpdates: () => Promise<{ status: string; message: string; version: string }>;
@@ -106,6 +125,9 @@ declare global {
       onSettingsOpened: (callback: () => void) => void;
       onUpdateStatus: (callback: (status: { status: string; message: string; version: string }) => void) => void;
       onGalleryTab: (callback: (tab: 'gallery' | 'general' | 'about') => void) => void;
+      onDragBoundaryUpdated: (callback: (dragBoundary: number) => void) => void;
+      onFullDesktopOverlayUpdated: (callback: (enabled: boolean) => void) => void;
+      onCompactOverlaySizeUpdated: (callback: (size: { width: number; height: number }) => void) => void;
     };
   }
 }

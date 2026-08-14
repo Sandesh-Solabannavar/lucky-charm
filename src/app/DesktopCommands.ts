@@ -4,6 +4,8 @@ import { LuckyCharmApp } from './LuckyCharmApp';
 export type DesktopCommandPorts = {
   setCharmVisible: () => boolean;
   moveCharm: (deltaX: number, deltaY: number) => void;
+  setFullDesktopOverlay: (enabled: boolean) => void;
+  setCompactOverlaySize: (size: { width: number; height: number }) => void;
   setOverlayInteractive: (interactive: boolean) => void;
   openGalleryWindow: (tab: GalleryTab) => void;
   closeGalleryWindow: () => void;
@@ -39,6 +41,14 @@ export class DesktopCommands {
 
   moveCharm(deltaX: number, deltaY: number) {
     this.ports.moveCharm(deltaX, deltaY);
+  }
+
+  setFullDesktopOverlay(enabled: boolean) {
+    this.ports.setFullDesktopOverlay(enabled);
+  }
+
+  setCompactOverlaySize(size: { width: number; height: number }) {
+    this.ports.setCompactOverlaySize(size);
   }
 
   setOverlayInteractive(interactive: boolean) {
