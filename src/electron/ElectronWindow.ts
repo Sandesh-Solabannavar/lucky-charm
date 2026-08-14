@@ -2,33 +2,26 @@ import { BrowserWindow } from 'electron';
 import type { BrowserWindowConstructorOptions } from 'electron';
 
 export class ElectronWindow {
-  private mainWindow: BrowserWindow | null = null;
+  private overlayWindow: BrowserWindow | null = null;
 
   create(options: BrowserWindowConstructorOptions) {
     return new BrowserWindow(options);
   }
 
-  setMain(window: BrowserWindow) {
-    this.mainWindow = window;
+  setOverlay(window: BrowserWindow) {
+    this.overlayWindow = window;
   }
 
-  clearMain(window: BrowserWindow) {
-    if (this.mainWindow === window) {
-      this.mainWindow = null;
+  clearOverlay(window: BrowserWindow) {
+    if (this.overlayWindow === window) {
+      this.overlayWindow = null;
     }
   }
 
-  main() {
-    return this.mainWindow;
-  }
-
-  currentMainOrFirst() {
-    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-      return this.mainWindow;
-    }
-
-    const first = BrowserWindow.getAllWindows()[0];
-    return first && !first.isDestroyed() ? first : null;
+  overlay() {
+    return this.overlayWindow && !this.overlayWindow.isDestroyed()
+      ? this.overlayWindow
+      : null;
   }
 
   reveal(window: BrowserWindow) {

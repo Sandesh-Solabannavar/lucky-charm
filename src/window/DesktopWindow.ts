@@ -21,7 +21,7 @@ export class DesktopWindow {
 
   setFullDesktopOverlay(enabled: boolean) {
     this.fullDesktopOverlay = enabled;
-    const window = this.electronWindow.currentMainOrFirst();
+    const window = this.electronWindow.overlay();
     if (!window) return;
     const [x = 0, y = 0] = window.getPosition();
     this.applyBounds(window, screen.getDisplayNearestPoint({ x, y }));
@@ -30,7 +30,7 @@ export class DesktopWindow {
   setCompactOverlaySize(size: { width: number; height: number }) {
     this.compactOverlaySize = size;
     if (this.fullDesktopOverlay) return;
-    const window = this.electronWindow.currentMainOrFirst();
+    const window = this.electronWindow.overlay();
     if (!window) return;
     const [x = 0, y = 0] = window.getPosition();
     this.applyBounds(window, screen.getDisplayNearestPoint({ x, y }));
@@ -67,10 +67,10 @@ export class DesktopWindow {
     void window.loadURL('about:blank');
     window.setIgnoreMouseEvents(true, { forward: true });
     window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    this.electronWindow.setMain(window);
+    this.electronWindow.setOverlay(window);
 
     window.on('closed', () => {
-      this.electronWindow.clearMain(window);
+      this.electronWindow.clearOverlay(window);
     });
 
     return window;
@@ -99,7 +99,7 @@ export class DesktopWindow {
   }
 
   ensureMain() {
-    return this.electronWindow.currentMainOrFirst() ?? this.createMain();
+    return this.electronWindow.overlay() ?? this.createMain();
   }
 
   activate() {
@@ -153,7 +153,7 @@ export class DesktopWindow {
   }
 
   setOverlayInteractive(interactive: boolean) {
-    const window = this.electronWindow.currentMainOrFirst();
+    const window = this.electronWindow.overlay();
     if (!window) return;
     if (this.overlayInteractive === interactive) return;
     this.overlayInteractive = interactive;
@@ -161,7 +161,7 @@ export class DesktopWindow {
   }
 
   sendToMain(channel: string, payload?: unknown) {
-    const window = this.electronWindow.currentMainOrFirst();
+    const window = this.electronWindow.overlay();
     if (!window) return;
     window.webContents.send(channel, payload);
   }
