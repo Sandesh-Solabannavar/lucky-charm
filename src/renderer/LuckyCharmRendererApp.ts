@@ -60,6 +60,7 @@ body {
   pointer-events: none;
 }
 .thread {
+  fill: none;
   stroke: url(#threadGradient);
   stroke-width: 3.1;
   stroke-linecap: round;
@@ -70,27 +71,11 @@ body {
 }
 .hanger-stack {
   position: absolute;
+  inset: 0;
   pointer-events: none;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  justify-content: flex-end;
-  min-height: 0;
-}
-.hanger-connector {
-  width: 3px;
-  height: 6px;
-  flex: 0 0 6px;
-  background: linear-gradient(90deg, #806127 0%, #d6ae60 48%, #7d5f29 100%);
-  box-shadow: 0 0 1px rgba(45, 29, 6, 0.34);
-}
-.hanger-connector.to-charm {
-  height: 9px;
-  flex-basis: 9px;
 }
 .hanger-bead {
+  position: absolute;
   width: var(--bead-size, 13px);
   height: var(--bead-size, 13px);
   border-radius: 999px;
@@ -101,12 +86,14 @@ body {
   background: repeating-linear-gradient(0deg, #d8211d 0 26%, #ffe266 26% 42%, #d8211d 42% 68%, #ffe266 68% 84%, #d8211d 84% 100%);
 }
 .hanger-image {
+  position: absolute;
   width: 28px;
   height: 28px;
   object-fit: contain;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.22));
 }
 .hanger-clover {
+  position: absolute;
   width: 20px;
   height: 20px;
   font-size: 21px;
@@ -313,6 +300,8 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     toastTimeoutId: number | null;
     overlayInteractive: boolean;
     attachmentOffset: number;
+    threadLength: number;
+    lastDragSample: { x: number; y: number; time: number } | null;
   } = {
     selected: null,
     undangled: false,
@@ -330,6 +319,8 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     toastTimeoutId: null,
     overlayInteractive: false,
     attachmentOffset: 0,
+    threadLength: 100,
+    lastDragSample: null,
   };
 
   document.body.replaceChildren();
@@ -415,6 +406,33 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     threadGradient.setAttribute('y2', String(height));
   }
 
+  function applyThreadTension(dt: number) {
+    const attachmentX = state.physics.x + state.charmSize.width / 2;
+    const attachmentY = state.physics.y + state.attachmentOffset;
+    const dx = attachmentX - anchor.x;
+    const dy = attachmentY - anchor.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance < 0.001) return;
+
+    const normalX = dx / distance;
+    const normalY = dy / distance;
+    const stretch = distance - state.threadLength;
+    if (stretch <= 0) return;
+
+    // The cord can stretch while dragged, then spring back without an abrupt snap.
+    const radialVelocity = state.physics.vx * normalX + state.physics.vy * normalY;
+    const tension = stretch * 95 + Math.max(0, radialVelocity) * 18;
+    state.physics.vx -= normalX * tension * dt;
+    state.physics.vy -= normalY * tension * dt;
+  }
+
+  function resetCharmToThreadRest() {
+    state.physics.x = anchor.x - state.charmSize.width / 2;
+    state.physics.y = anchor.y + state.threadLength - state.attachmentOffset;
+    state.physics.vx = 0;
+    state.physics.vy = 0;
+  }
+
   function showToast(message: string) {
     toast.textContent = message;
     toast.classList.remove('hidden');
@@ -430,19 +448,29 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   function updateThreadVisual() {
     updateThreadViewport();
     const charmCenterX = state.physics.x + state.charmSize.width / 2;
-    const hangerTopY = Math.round(
-      state.physics.y + state.attachmentOffset - hangerStack.offsetHeight + 3,
-    );
-    const swing = clamp(state.physics.vx * 1.8, -18, 18);
+    const attachmentY = Math.round(state.physics.y + state.attachmentOffset);
+    const swing = clamp(-state.physics.vx * 0.025, -10, 10);
     const controlX = anchor.x + (charmCenterX - anchor.x) * 0.52 + swing;
-    const controlY = anchor.y + (hangerTopY - anchor.y) * 0.46;
-    const d = `M ${anchor.x} ${anchor.y} Q ${controlX} ${controlY} ${charmCenterX} ${hangerTopY}`;
+    const controlY = anchor.y + (attachmentY - anchor.y) * 0.46;
+    const d = `M ${anchor.x} ${anchor.y} Q ${controlX} ${controlY} ${charmCenterX} ${attachmentY}`;
     threadPath.setAttribute('d', d);
     anchorDot.setAttribute('cx', String(anchor.x));
     anchorDot.setAttribute('cy', String(anchor.y));
 
-    hangerStack.style.left = `${charmCenterX}px`;
-    hangerStack.style.top = `${hangerTopY}px`;
+    const threadParts = Array.from(hangerStack.children) as HTMLElement[];
+    const firstPartT = 0.72;
+    const lastPartT = 0.96;
+    threadParts.forEach((part, index) => {
+      const t = threadParts.length === 1
+        ? (firstPartT + lastPartT) / 2
+        : firstPartT + ((lastPartT - firstPartT) * index) / (threadParts.length - 1);
+      const inverseT = 1 - t;
+      const x = inverseT * inverseT * anchor.x + 2 * inverseT * t * controlX + t * t * charmCenterX;
+      const y = inverseT * inverseT * anchor.y + 2 * inverseT * t * controlY + t * t * attachmentY;
+      part.style.left = `${x}px`;
+      part.style.top = `${y}px`;
+      part.style.transform = 'translate(-50%, -50%)';
+    });
 
     if (state.undangled) {
       threadPath.style.opacity = '0';
@@ -493,9 +521,11 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
 
   async function syncOverlayInteractivity(pointerX: number, pointerY: number) {
     const overCharm = isPointInElement(pointerX, pointerY, charm);
-    const overHanger = isPointInElement(pointerX, pointerY, hangerStack);
+    const overHanger = Array.from(hangerStack.children).some((part) => (
+      isPointInElement(pointerX, pointerY, part)
+    ));
     const threadBottomX = state.physics.x + state.charmSize.width / 2;
-    const threadBottomY = hangerStack.offsetTop;
+    const threadBottomY = state.physics.y + state.attachmentOffset;
     const overThread = !state.undangled
       && distancePointToSegment(pointerX, pointerY, anchor.x, anchor.y, threadBottomX, threadBottomY) <= 8;
     const overMenu = !menu.classList.contains('hidden') && isPointInElement(pointerX, pointerY, menu);
@@ -531,15 +561,7 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
       state.charmSize.height * (attachmentTopRatio[charmData.id] ?? 0),
     );
     const parts = hangerPartsFor(charmData);
-    if (parts.length === 0) {
-      const connector = make('div', 'hanger-connector to-charm');
-      const height = Math.max(9, state.attachmentOffset + 5);
-      connector.style.height = `${height}px`;
-      connector.style.flexBasis = `${height}px`;
-      hangerStack.append(connector);
-      return;
-    }
-    for (const [index, part] of parts.entries()) {
+    for (const part of parts) {
       if (part.type === 'bead') {
         const bead = make('div', `hanger-bead${part.striped ? ' striped' : ''}`);
         bead.style.setProperty('--bead-size', `${part.size}px`);
@@ -554,13 +576,6 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
       } else {
         hangerStack.append(make('div', 'hanger-clover', '☘'));
       }
-      const connector = make('div', `hanger-connector${index === parts.length - 1 ? ' to-charm' : ''}`);
-      if (index === parts.length - 1) {
-        const height = Math.max(9, state.attachmentOffset + 5);
-        connector.style.height = `${height}px`;
-        connector.style.flexBasis = `${height}px`;
-      }
-      hangerStack.append(connector);
     }
   }
 
@@ -570,6 +585,8 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     renderHanger(state.selected);
     menuRitual.textContent = state.selected.ritual;
     state.physics.targetX = anchor.x - state.charmSize.width / 2;
+    state.threadLength = Math.max(40, state.physics.targetY + state.attachmentOffset - anchor.y);
+    resetCharmToThreadRest();
     layoutCharm();
   }
 
@@ -581,17 +598,26 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
       last = now;
 
       if (!state.draggingCharm) {
-        const stiffness = state.undangled ? 8 : 16;
-        const damping = 0.86;
-        const dx = state.physics.targetX - state.physics.x;
-        const dy = state.physics.targetY - state.physics.y;
-
-        state.physics.vx += dx * stiffness * dt;
-        state.physics.vy += dy * stiffness * dt;
-        state.physics.vx *= damping;
-        state.physics.vy *= damping;
-        state.physics.x += state.physics.vx;
-        state.physics.y += state.physics.vy;
+        if (state.undangled) {
+          const stiffness = 8;
+          const damping = 0.86;
+          const dx = state.physics.targetX - state.physics.x;
+          const dy = state.physics.targetY - state.physics.y;
+          state.physics.vx += dx * stiffness * dt;
+          state.physics.vy += dy * stiffness * dt;
+          state.physics.vx *= damping;
+          state.physics.vy *= damping;
+          state.physics.x += state.physics.vx;
+          state.physics.y += state.physics.vy;
+        } else {
+          state.physics.vy += 980 * dt;
+          applyThreadTension(dt);
+          state.physics.x += state.physics.vx * dt;
+          state.physics.y += state.physics.vy * dt;
+          const airDamping = Math.exp(-1.2 * dt);
+          state.physics.vx *= airDamping;
+          state.physics.vy *= airDamping;
+        }
       }
 
       layoutCharm();
@@ -615,6 +641,7 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     state.dragPointerOffset.y = event.clientY - state.physics.y;
     state.physics.vx = 0;
     state.physics.vy = 0;
+    state.lastDragSample = { x: state.physics.x, y: state.physics.y, time: event.timeStamp };
     closeMenu();
     void setOverlayInteractive(true);
     charm.setPointerCapture(event.pointerId);
@@ -626,22 +653,25 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     const y = event.clientY - state.dragPointerOffset.y;
     state.physics.x = Math.max(20, Math.min(window.innerWidth - state.charmSize.width - 20, x));
     state.physics.y = Math.max(40, Math.min(window.innerHeight - state.charmSize.height - 60, y));
+    if (state.lastDragSample) {
+      const dt = Math.max(0.001, (event.timeStamp - state.lastDragSample.time) / 1000);
+      state.physics.vx = clamp((state.physics.x - state.lastDragSample.x) / dt, -1400, 1400);
+      state.physics.vy = clamp((state.physics.y - state.lastDragSample.y) / dt, -1400, 1400);
+    }
+    state.lastDragSample = { x: state.physics.x, y: state.physics.y, time: event.timeStamp };
     layoutCharm();
   });
 
   const releaseCharm = () => {
     if (!state.draggingCharm) return;
     state.draggingCharm = false;
+    state.lastDragSample = null;
     void syncOverlayInteractivity(-1, -1);
     if (state.undangled) {
       state.physics.targetX = state.physics.x;
       state.physics.targetY = state.physics.y;
       return;
     }
-    const targetX = anchor.x - state.charmSize.width / 2;
-    void api.moveWindow(Math.round(state.physics.x - targetX), 0);
-    state.physics.targetX = targetX;
-    state.physics.targetY = 152;
   };
 
   charm.addEventListener('pointerup', () => {
