@@ -1,0 +1,46 @@
+{
+    "name": "lucky-charm-desktop",
+    "version": "0.1.0",
+    "private": true,
+    "packageManager": "pnpm@9.15.9",
+    "description": "A desktop companion inspired by Lucky Charm for macOS and Windows.",
+    "main": "dist-electron/main.cjs",
+    "scripts": {
+        "build": "rimraf dist-electron && vp pack",
+        "start": "electron .",
+        "dev": "pnpm run build && electron .",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "package": "electron-builder"
+    },
+    "build": {
+        "appId": "com.luckycharm.desktop",
+        "productName": "Lucky Charm",
+        "files": [
+            "dist-electron/**/*",
+            "assets/**/*",
+            "package.json"
+        ],
+        "mac": {
+            "target": [
+                "dmg",
+                "zip"
+            ],
+            "category": "public.app-category.productivity"
+        },
+        "win": {
+            "target": [
+                "portable",
+                "nsis"
+            ]
+        }
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.2",
+        "electron": "^33.1.1",
+        "electron-builder": "^25.1.0",
+        "rimraf": "^6.0.0",
+        "typescript": "^5.6.3",
+        "vite": "npm:@voidzero-dev/vite-plus-core@0.2.2",
+        "vite-plus": "0.2.2"
+    }
+}
