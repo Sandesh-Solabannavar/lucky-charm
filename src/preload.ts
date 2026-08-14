@@ -4,6 +4,7 @@ import {
   mountLuckyCharmGalleryRenderer,
   type GalleryRendererElectronApi,
 } from './renderer/LuckyCharmGalleryRendererApp';
+import { IPC_CHANNEL } from './ipc/channels';
 
 type Charm = {
   id: string;
@@ -30,23 +31,23 @@ type Charm = {
 type PreloadElectronApi = RendererElectronApi & GalleryRendererElectronApi;
 
 const electronApi: PreloadElectronApi = {
-  getCharms: () => ipcRenderer.invoke('get-charms') as Promise<Charm[]>,
-  selectCharm: (id: string) => ipcRenderer.invoke('select-charm', id) as Promise<Charm | undefined>,
-  toggleWindow: () => ipcRenderer.invoke('toggle-window') as Promise<boolean>,
-  toggleGallery: () => ipcRenderer.invoke('toggle-gallery') as Promise<boolean>,
-  setGalleryOpen: (open: boolean) => ipcRenderer.invoke('set-gallery-open', open) as Promise<boolean>,
-  triggerRitual: () => ipcRenderer.invoke('trigger-ritual') as Promise<Charm>,
-  moveWindow: (deltaX: number, deltaY: number) => ipcRenderer.invoke('move-window', deltaX, deltaY) as Promise<boolean>,
-  setOverlayInteractive: (interactive: boolean) => ipcRenderer.invoke('set-overlay-interactive', interactive) as Promise<boolean>,
-  getDragBoundary: () => ipcRenderer.invoke('get-drag-boundary') as Promise<number>,
-  getFullDesktopOverlay: () => ipcRenderer.invoke('get-full-desktop-overlay') as Promise<boolean>,
-  setFullDesktopOverlay: (enabled: boolean) => ipcRenderer.invoke('set-full-desktop-overlay', enabled) as Promise<boolean>,
-  getCompactOverlaySize: () => ipcRenderer.invoke('get-compact-overlay-size') as Promise<{ width: number; height: number }>,
-  setCompactOverlaySize: (size: { width: number; height: number }) => ipcRenderer.invoke('set-compact-overlay-size', size) as Promise<{ width: number; height: number }>,
-  toggleUndangle: () => ipcRenderer.invoke('toggle-undangle') as Promise<boolean>,
-  openSettings: () => ipcRenderer.invoke('open-settings') as Promise<boolean>,
-  checkUpdates: () => ipcRenderer.invoke('check-updates') as Promise<{ status: string; message: string; version: string }>,
-  quitApp: () => ipcRenderer.invoke('quit-app') as Promise<boolean>,
+  getCharms: () => ipcRenderer.invoke(IPC_CHANNEL.getCharms) as Promise<Charm[]>,
+  selectCharm: (id: string) => ipcRenderer.invoke(IPC_CHANNEL.selectCharm, id) as Promise<Charm | undefined>,
+  toggleWindow: () => ipcRenderer.invoke(IPC_CHANNEL.toggleWindow) as Promise<boolean>,
+  toggleGallery: () => ipcRenderer.invoke(IPC_CHANNEL.toggleGallery) as Promise<boolean>,
+  setGalleryOpen: (open: boolean) => ipcRenderer.invoke(IPC_CHANNEL.setGalleryOpen, open) as Promise<boolean>,
+  triggerRitual: () => ipcRenderer.invoke(IPC_CHANNEL.triggerRitual) as Promise<Charm>,
+  moveWindow: (deltaX: number, deltaY: number) => ipcRenderer.invoke(IPC_CHANNEL.moveWindow, deltaX, deltaY) as Promise<boolean>,
+  setOverlayInteractive: (interactive: boolean) => ipcRenderer.invoke(IPC_CHANNEL.setOverlayInteractive, interactive) as Promise<boolean>,
+  getDragBoundary: () => ipcRenderer.invoke(IPC_CHANNEL.getDragBoundary) as Promise<number>,
+  getFullDesktopOverlay: () => ipcRenderer.invoke(IPC_CHANNEL.getFullDesktopOverlay) as Promise<boolean>,
+  setFullDesktopOverlay: (enabled: boolean) => ipcRenderer.invoke(IPC_CHANNEL.setFullDesktopOverlay, enabled) as Promise<boolean>,
+  getCompactOverlaySize: () => ipcRenderer.invoke(IPC_CHANNEL.getCompactOverlaySize) as Promise<{ width: number; height: number }>,
+  setCompactOverlaySize: (size: { width: number; height: number }) => ipcRenderer.invoke(IPC_CHANNEL.setCompactOverlaySize, size) as Promise<{ width: number; height: number }>,
+  toggleUndangle: () => ipcRenderer.invoke(IPC_CHANNEL.toggleUndangle) as Promise<boolean>,
+  openSettings: () => ipcRenderer.invoke(IPC_CHANNEL.openSettings) as Promise<boolean>,
+  checkUpdates: () => ipcRenderer.invoke(IPC_CHANNEL.checkUpdates) as Promise<{ status: string; message: string; version: string }>,
+  quitApp: () => ipcRenderer.invoke(IPC_CHANNEL.quitApp) as Promise<boolean>,
   onCharmsUpdated: (callback: (charms: Charm[]) => void) => {
     ipcRenderer.on('charms-updated', (_event, charms) => callback(charms));
   },

@@ -3,6 +3,7 @@ import { LuckyCharmApp } from '../app/LuckyCharmApp';
 import { DesktopCommands } from '../app/DesktopCommands';
 import { ElectronApp } from '../electron/ElectronApp';
 import { DesktopSettingsStore } from '../settings/DesktopSettingsStore';
+import { IPC_CHANNEL, IPC_EVENT } from './channels';
 
 export class LuckyCharmIpc {
   constructor(
@@ -13,64 +14,64 @@ export class LuckyCharmIpc {
   ) {}
 
   install() {
-    ipcMain.handle('get-charms', () => this.app.getAll());
+    ipcMain.handle(IPC_CHANNEL.getCharms, () => this.app.getAll());
 
-    ipcMain.handle('select-charm', (_event, charmId: string) => {
+    ipcMain.handle(IPC_CHANNEL.selectCharm, (_event, charmId: string) => {
       return this.commands.selectCharm(charmId);
     });
 
-    ipcMain.handle('toggle-window', () => {
+    ipcMain.handle(IPC_CHANNEL.toggleWindow, () => {
       return this.commands.toggleCharm();
     });
 
-    ipcMain.handle('toggle-gallery', () => {
+    ipcMain.handle(IPC_CHANNEL.toggleGallery, () => {
       return this.commands.toggleGallery();
     });
 
-    ipcMain.handle('set-gallery-open', (_event, open: boolean) => {
+    ipcMain.handle(IPC_CHANNEL.setGalleryOpen, (_event, open: boolean) => {
       return this.commands.setGalleryOpen(Boolean(open));
     });
 
-    ipcMain.handle('trigger-ritual', () => {
+    ipcMain.handle(IPC_CHANNEL.triggerRitual, () => {
       return this.commands.performRitual();
     });
 
-    ipcMain.handle('move-window', (_event, deltaX: number, deltaY: number) => {
+    ipcMain.handle(IPC_CHANNEL.moveWindow, (_event, deltaX: number, deltaY: number) => {
       this.commands.moveCharm(Number(deltaX) || 0, Number(deltaY) || 0);
       return true;
     });
 
-    ipcMain.handle('set-overlay-interactive', (_event, interactive: boolean) => {
+    ipcMain.handle(IPC_CHANNEL.setOverlayInteractive, (_event, interactive: boolean) => {
       this.commands.setOverlayInteractive(Boolean(interactive));
       return true;
     });
 
-    ipcMain.handle('get-drag-boundary', () => this.settingsStore.get().dragBoundary);
+    ipcMain.handle(IPC_CHANNEL.getDragBoundary, () => this.settingsStore.get().dragBoundary);
 
-    ipcMain.handle('set-drag-boundary', (_event, dragBoundary: unknown) => {
+    ipcMain.handle(IPC_CHANNEL.setDragBoundary, (_event, dragBoundary: unknown) => {
       if (typeof dragBoundary !== 'number' || !Number.isFinite(dragBoundary)) {
         return this.settingsStore.get().dragBoundary;
       }
       const next = this.settingsStore.update({ dragBoundary }).dragBoundary;
-      this.commands.notify('drag-boundary-updated', next);
+      this.commands.notify(IPC_EVENT.dragBoundaryUpdated, next);
       return next;
     });
 
-    ipcMain.handle('get-full-desktop-overlay', () => this.settingsStore.get().fullDesktopOverlay);
+    ipcMain.handle(IPC_CHANNEL.getFullDesktopOverlay, () => this.settingsStore.get().fullDesktopOverlay);
 
-    ipcMain.handle('set-full-desktop-overlay', (_event, enabled: unknown) => {
+    ipcMain.handle(IPC_CHANNEL.setFullDesktopOverlay, (_event, enabled: unknown) => {
       if (typeof enabled !== 'boolean') {
         return this.settingsStore.get().fullDesktopOverlay;
       }
       const next = this.settingsStore.update({ fullDesktopOverlay: enabled }).fullDesktopOverlay;
       this.commands.setFullDesktopOverlay(next);
-      this.commands.notify('full-desktop-overlay-updated', next);
+      this.commands.notify(IPC_EVENT.fullDesktopOverlayUpdated, next);
       return next;
     });
 
-    ipcMain.handle('get-compact-overlay-size', () => this.settingsStore.get().compactOverlaySize);
+    ipcMain.handle(IPC_CHANNEL.getCompactOverlaySize, () => this.settingsStore.get().compactOverlaySize);
 
-    ipcMain.handle('set-compact-overlay-size', (_event, size: unknown) => {
+    ipcMain.handle(IPC_CHANNEL.setCompactOverlaySize, (_event, size: unknown) => {
       if (!size || typeof size !== 'object') {
         return this.settingsStore.get().compactOverlaySize;
       }
@@ -80,28 +81,28 @@ export class LuckyCharmIpc {
       }
       const next = this.settingsStore.update({ compactOverlaySize: { width, height } }).compactOverlaySize;
       this.commands.setCompactOverlaySize(next);
-      this.commands.notify('compact-overlay-size-updated', next);
+      this.commands.notify(IPC_EVENT.compactOverlaySizeUpdated, next);
       return next;
     });
 
-    ipcMain.handle('toggle-undangle', () => {
+    ipcMain.handle(IPC_CHANNEL.toggleUndangle, () => {
       const undangled = this.app.toggleUndangled();
-      this.commands.notify('undangle-updated', undangled);
+      this.commands.notify(IPC_EVENT.undangleUpdated, undangled);
       return undangled;
     });
 
-    ipcMain.handle('open-settings', () => {
+    ipcMain.handle(IPC_CHANNEL.openSettings, () => {
       this.commands.setGalleryOpen(true, 'general');
       return true;
     });
 
-    ipcMain.handle('check-updates', () => {
+    ipcMain.handle(IPC_CHANNEL.checkUpdates, () => {
       const updateStatus = this.app.getUpdateStatus();
-      this.commands.notify('update-status', updateStatus);
+      this.commands.notify(IPC_EVENT.updateStatus, updateStatus);
       return updateStatus;
     });
 
-    ipcMain.handle('quit-app', () => {
+    ipcMain.handle(IPC_CHANNEL.quitApp, () => {
       this.electronApp.quit();
       return true;
     });
