@@ -12,15 +12,15 @@ export class DesktopLifecycle {
   ) {}
 
   register() {
-    this.electronApp.registerShortcut(this.shortcuts.toggleCharm, () => {
+    this.registerShortcut('Toggle charm', this.shortcuts.toggleCharm, () => {
       this.desktopWindow.toggleMain();
     });
 
-    this.electronApp.registerShortcut(this.shortcuts.performRitual, () => {
+    this.registerShortcut('Perform ritual', this.shortcuts.performRitual, () => {
       this.onRitualShortcut();
     });
 
-    this.electronApp.registerShortcut(this.shortcuts.openGallery, () => {
+    this.registerShortcut('Open gallery', this.shortcuts.openGallery, () => {
       this.onGalleryShortcut();
     });
 
@@ -29,13 +29,23 @@ export class DesktopLifecycle {
     });
 
     this.electronApp.on('open-url', (_event, url: string) => {
-      if (!url.includes('luckycharm://')) return;
-      this.desktopWindow.activate();
-      this.onRitualShortcut();
+      this.handleProtocolUrl(url);
     });
 
     this.electronApp.on('will-quit', () => {
       this.electronApp.unregisterAllShortcuts();
     });
+  }
+
+  handleProtocolUrl(url: string) {
+    if (!url.startsWith('luckycharm://')) return;
+    this.desktopWindow.activate();
+    this.onRitualShortcut();
+  }
+
+  private registerShortcut(label: string, accelerator: string, callback: () => void) {
+    if (!this.electronApp.registerShortcut(accelerator, callback)) {
+      console.warn(`${label} shortcut could not be registered: ${accelerator}`);
+    }
   }
 }

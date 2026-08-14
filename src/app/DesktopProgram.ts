@@ -7,12 +7,23 @@ import { DesktopSettingsStore } from '../settings/DesktopSettingsStore';
 import { DesktopGalleryWindow } from '../window/DesktopGalleryWindow';
 import { DesktopWindow } from '../window/DesktopWindow';
 import { LuckyCharmApp } from './LuckyCharmApp';
+import { DesktopCommands } from './DesktopCommands';
 import { DesktopTray } from './DesktopTray';
 import { DesktopLifecycle } from './DesktopLifecycle';
 
 export async function runDesktopProgram() {
   const electronApp = new ElectronApp();
   const electronWindow = new ElectronWindow();
+  if (!electronApp.requestSingleInstanceLock()) {
+    electronApp.quit();
+    return;
+  }
+
+  let handleExternalUrl: (url: string) => void = () => undefined;
+  electronApp.on('second-instance', (_event, arguments_: string[]) => {
+    const url = arguments_.find((argument) => argument.startsWith('luckycharm://'));
+    if (url) handleExternalUrl(url);
+  });
 
   try {
     await electronApp.whenReady();
@@ -45,59 +56,44 @@ export async function runDesktopProgram() {
       },
     );
 
-    const desktopTray = new DesktopTray(luckyCharmApp, desktopWindow, electronApp);
-
     const broadcast = (channel: string, payload?: unknown) => {
       desktopWindow.sendToMain(channel, payload);
       galleryWindow.send(channel, payload);
     };
 
-    const openGallery = (tab: 'gallery' | 'general' | 'about' = 'gallery') => {
-      luckyCharmApp.setGalleryOpen(true);
-      galleryWindow.open(tab);
-      broadcast('charms-updated', luckyCharmApp.getAll());
-      broadcast('charm-selected', luckyCharmApp.getSelected());
-      broadcast('gallery-updated', true);
-    };
-
-    const closeGallery = () => {
-      luckyCharmApp.setGalleryOpen(false);
-      galleryWindow.close();
-      broadcast('gallery-updated', false);
-    };
+    let commands: DesktopCommands;
+    const desktopTray = new DesktopTray(
+      luckyCharmApp,
+      electronApp,
+      () => commands.toggleCharm(),
+      () => commands.performRitual(),
+    );
+    commands = new DesktopCommands(luckyCharmApp, {
+      setCharmVisible: () => {
+        desktopWindow.toggleMain();
+        return desktopWindow.isMainVisible();
+      },
+      moveCharm: (dx, dy) => desktopWindow.moveMain(dx, dy),
+      setOverlayInteractive: (interactive) => desktopWindow.setOverlayInteractive(interactive),
+      openGalleryWindow: (tab) => galleryWindow.open(tab),
+      closeGalleryWindow: () => galleryWindow.close(),
+      refreshTray: () => desktopTray.refresh(),
+      persistSelectedCharm: (id) => settingsStore.setSelectedCharmId(id),
+      broadcast,
+    });
 
     const lifecycle = new DesktopLifecycle(
       electronApp,
       desktopWindow,
       settings.shortcuts,
-      () => {
-        const selected = luckyCharmApp.performRitual();
-        settingsStore.setSelectedCharmId(selected.id);
-        desktopTray.refresh();
-        broadcast('charm-selected', selected);
-        broadcast('ritual-triggered', selected);
-      },
-      () => openGallery('gallery'),
+      () => commands.performRitual(),
+      () => commands.setGalleryOpen(true),
     );
 
     const ipc = new LuckyCharmIpc(
       luckyCharmApp,
       electronApp,
-      {
-        send: (channel, payload) => broadcast(channel, payload),
-        toggle: () => {
-          desktopWindow.toggleMain();
-          return desktopWindow.isMainVisible();
-        },
-        move: (dx, dy) => desktopWindow.moveMain(dx, dy),
-        setOverlayInteractive: (interactive) => desktopWindow.setOverlayInteractive(interactive),
-        openGallery,
-        closeGallery,
-      },
-      () => {
-        settingsStore.setSelectedCharmId(luckyCharmApp.getSelected().id);
-        desktopTray.refresh();
-      },
+      commands,
     );
 
     electronApp.setAccessoryActivationPolicyOnMac();
@@ -110,6 +106,9 @@ export async function runDesktopProgram() {
     }
     ipc.install();
     lifecycle.register();
+    handleExternalUrl = (url) => lifecycle.handleProtocolUrl(url);
+    const startupProtocolUrl = process.argv.find((argument) => argument.startsWith('luckycharm://'));
+    if (startupProtocolUrl) handleExternalUrl(startupProtocolUrl);
 
     broadcast('charms-updated', luckyCharmApp.getAll());
     broadcast('charm-selected', luckyCharmApp.getSelected());

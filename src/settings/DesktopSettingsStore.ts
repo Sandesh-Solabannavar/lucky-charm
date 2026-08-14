@@ -38,6 +38,48 @@ const defaultSettings: AppSettings = {
   galleryBounds: null,
 };
 
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+function normalizeSettings(value: unknown): AppSettings {
+  const parsed = value && typeof value === 'object' ? value as Partial<AppSettings> : {};
+  const positions = parsed.charmPositions && typeof parsed.charmPositions === 'object'
+    ? Object.fromEntries(
+      Object.entries(parsed.charmPositions).flatMap(([displayId, position]) =>
+        isFiniteNumber(position) ? [[displayId, Math.max(0, Math.min(1, position))]] : [],
+      ),
+    )
+    : {};
+  const bounds = parsed.galleryBounds;
+  const galleryBounds = bounds
+    && isFiniteNumber(bounds.x)
+    && isFiniteNumber(bounds.y)
+    && isFiniteNumber(bounds.width)
+    && isFiniteNumber(bounds.height)
+    && bounds.width >= 820
+    && bounds.height >= 560
+    ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+    : null;
+
+  return {
+    ...defaultSettings,
+    version: defaultSettings.version,
+    selectedCharmId: typeof parsed.selectedCharmId === 'string' ? parsed.selectedCharmId : defaultSettings.selectedCharmId,
+    charmPositions: positions,
+    visible: typeof parsed.visible === 'boolean' ? parsed.visible : defaultSettings.visible,
+    launchAtStartup: typeof parsed.launchAtStartup === 'boolean' ? parsed.launchAtStartup : defaultSettings.launchAtStartup,
+    animationIntensity: isFiniteNumber(parsed.animationIntensity)
+      ? Math.max(0, Math.min(2, parsed.animationIntensity))
+      : defaultSettings.animationIntensity,
+    shortcuts: {
+      toggleCharm: typeof parsed.shortcuts?.toggleCharm === 'string' ? parsed.shortcuts.toggleCharm : defaultSettings.shortcuts.toggleCharm,
+      performRitual: typeof parsed.shortcuts?.performRitual === 'string' ? parsed.shortcuts.performRitual : defaultSettings.shortcuts.performRitual,
+      openGallery: typeof parsed.shortcuts?.openGallery === 'string' ? parsed.shortcuts.openGallery : defaultSettings.shortcuts.openGallery,
+    },
+    galleryBounds,
+  };
+}
+
 export class DesktopSettingsStore {
   private readonly settingsFilePath: string;
   private settings: AppSettings = { ...defaultSettings };
@@ -54,15 +96,7 @@ export class DesktopSettingsStore {
       }
 
       const raw = fs.readFileSync(this.settingsFilePath, 'utf8');
-      const parsed = JSON.parse(raw) as Partial<AppSettings>;
-      this.settings = {
-        ...defaultSettings,
-        ...parsed,
-        shortcuts: {
-          ...defaultSettings.shortcuts,
-          ...(parsed.shortcuts ?? {}),
-        },
-      };
+      this.settings = normalizeSettings(JSON.parse(raw));
       return this.settings;
     } catch {
       this.settings = { ...defaultSettings };
@@ -76,14 +110,11 @@ export class DesktopSettingsStore {
   }
 
   update(partial: Partial<AppSettings>) {
-    this.settings = {
+    this.settings = normalizeSettings({
       ...this.settings,
       ...partial,
-      shortcuts: {
-        ...this.settings.shortcuts,
-        ...(partial.shortcuts ?? {}),
-      },
-    };
+      shortcuts: { ...this.settings.shortcuts, ...(partial.shortcuts ?? {}) },
+    });
     this.save();
     return this.settings;
   }

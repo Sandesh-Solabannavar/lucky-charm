@@ -23,7 +23,7 @@ export class DesktopGalleryWindow {
     const fallbackHeight = 700;
     const fallbackX = display.workArea.x + Math.max(20, Math.round((display.workArea.width - fallbackWidth) / 2));
     const fallbackY = display.workArea.y + Math.max(20, Math.round((display.workArea.height - fallbackHeight) / 2));
-    const saved = this.getInitialBounds();
+    const saved = this.reconcileBounds(this.getInitialBounds());
 
     this.window = this.electronWindow.create({
       x: saved?.x ?? fallbackX,
@@ -84,5 +84,22 @@ export class DesktopGalleryWindow {
 
   send(channel: string, payload?: unknown) {
     this.window?.webContents.send(channel, payload);
+  }
+
+  private reconcileBounds(bounds: { x: number; y: number; width: number; height: number } | null) {
+    if (!bounds) return null;
+    const display = screen.getDisplayNearestPoint({
+      x: Math.round(bounds.x + bounds.width / 2),
+      y: Math.round(bounds.y + bounds.height / 2),
+    });
+    const area = display.workArea;
+    const width = Math.min(bounds.width, area.width);
+    const height = Math.min(bounds.height, area.height);
+    return {
+      width,
+      height,
+      x: Math.max(area.x, Math.min(bounds.x, area.x + area.width - width)),
+      y: Math.max(area.y, Math.min(bounds.y, area.y + area.height - height)),
+    };
   }
 }

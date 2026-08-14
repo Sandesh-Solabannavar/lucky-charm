@@ -1,27 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import type { Charm } from '../shared/Charm';
 
-export type Charm = {
-  id: string;
-  name: string;
-  region: string;
-  description: string;
-  ritual: string;
-  art:
-    | {
-      type: 'emoji';
-      glyph: string;
-      fontSize: number;
-      frame: [number, number];
-    }
-    | {
-      type: 'image';
-      src: string;
-      frame: [number, number];
-    };
-  accent: string;
-  glow: string;
-};
+export type { Charm } from '../shared/Charm';
 
 const websiteAsset = (relativePath: string) => `https://luckydangle.app${relativePath}`;
 
@@ -131,6 +112,7 @@ const baseCharms: Charm[] = [
     },
     accent: '#c9a4ff',
     glow: '#9b73d9',
+    hangerAsset: websiteAsset('/charms/horse-head-bead.png'),
   },
   {
     id: 'scarab',
@@ -205,12 +187,16 @@ export class LuckyCharmApp {
       return charm;
     }
 
+    const hangerAsset = charm.hangerAsset
+      ? this.toLocalAssetSource(charm.hangerAsset, assetsDir)
+      : undefined;
     return {
       ...charm,
       art: {
         ...charm.art,
         src: this.toLocalAssetSource(charm.art.src, assetsDir),
       },
+      ...(hangerAsset ? { hangerAsset } : {}),
     };
   }
 

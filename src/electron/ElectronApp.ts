@@ -17,6 +17,10 @@ export class ElectronApp {
     app.quit();
   }
 
+  requestSingleInstanceLock() {
+    return app.requestSingleInstanceLock();
+  }
+
   setAsDefaultProtocolClient(protocol: string) {
     return app.setAsDefaultProtocolClient(protocol);
   }
@@ -43,6 +47,6 @@ export class ElectronApp {
   }
 
   registerShortcut(accelerator: string, handler: () => void) {
-    globalShortcut.register(accelerator, handler);
+    return globalShortcut.register(accelerator, handler);
   }
 }

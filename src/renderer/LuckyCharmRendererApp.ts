@@ -1,24 +1,4 @@
-type Charm = {
-  id: string;
-  name: string;
-  region: string;
-  description: string;
-  ritual: string;
-  art:
-    | {
-      type: 'emoji';
-      glyph: string;
-      fontSize: number;
-      frame: [number, number];
-    }
-    | {
-      type: 'image';
-      src: string;
-      frame: [number, number];
-    };
-  accent: string;
-  glow: string;
-};
+import type { Charm } from '../shared/Charm';
 
 type UpdateStatus = {
   status: string;
@@ -75,6 +55,8 @@ body {
 .thread-layer {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 .thread {
@@ -93,44 +75,44 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 0;
+  justify-content: flex-end;
+  min-height: 0;
 }
-.bead-white {
-  width: 13px;
-  height: 13px;
-  border-radius: 999px;
-  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #f1f2f7 55%, #d8dbe8 100%);
-  box-shadow: inset -1px -2px 3px rgba(127, 136, 160, 0.42);
+.hanger-connector {
+  width: 3px;
+  height: 6px;
+  flex: 0 0 6px;
+  background: linear-gradient(90deg, #806127 0%, #d6ae60 48%, #7d5f29 100%);
+  box-shadow: 0 0 1px rgba(45, 29, 6, 0.34);
 }
-.bead-eye {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: radial-gradient(circle at 34% 30%, #4a8af8 0%, #2356c7 50%, #152a8a 100%);
-  box-shadow: 0 1px 4px rgba(44, 68, 158, 0.45);
-  position: relative;
+.hanger-connector.to-charm {
+  height: 9px;
+  flex-basis: 9px;
 }
-.bead-eye::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
+.hanger-bead {
+  width: var(--bead-size, 13px);
+  height: var(--bead-size, 13px);
   border-radius: 999px;
-  background: #ffffff;
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, var(--bead-color, #f1f2f7) 55%, var(--bead-shadow, #d8dbe8) 100%);
+  box-shadow: inset -1px -2px 3px color-mix(in srgb, var(--bead-shadow, #d8dbe8) 72%, #000);
 }
-.bead-eye::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  background: radial-gradient(circle at 35% 35%, #67d7ff 0%, #2d9fd6 58%, #133168 100%);
+.hanger-bead.striped {
+  background: repeating-linear-gradient(0deg, #d8211d 0 26%, #ffe266 26% 42%, #d8211d 42% 68%, #ffe266 68% 84%, #d8211d 84% 100%);
+}
+.hanger-image {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.22));
+}
+.hanger-clover {
+  width: 20px;
+  height: 20px;
+  font-size: 21px;
+  line-height: 20px;
+  text-align: center;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.18));
 }
 .charm {
   position: absolute;
@@ -239,6 +221,52 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
+type HangerPart =
+  | { type: 'bead'; size: number; color: string; shadow: string; striped?: boolean }
+  | { type: 'horse'; source?: string }
+  | { type: 'clover' };
+
+const gold = { type: 'bead', size: 12, color: '#f7c743', shadow: '#bd7a16' } as const;
+const white = { type: 'bead', size: 14, color: '#f8f8fc', shadow: '#c7ccd8' } as const;
+
+// Transparent top padding measured from the shipped PNGs. The cord must reach
+// the visible attachment loop, not just the top of the image element.
+const attachmentTopRatio: Record<string, number> = {
+  // Emoji glyphs are vertically centered inside their fixed-size charm box.
+  nazar: 18 / 74,
+  hamsa: 16 / 400,
+  'nimbu-mirchi': 38 / 275,
+  'drishti-bommai': 15 / 400,
+  daruma: 12 / 400,
+  'maneki-neko': 11 / 400,
+  horseshoe: 54 / 400,
+  scarab: 53 / 304,
+  emoji: 18 / 74,
+};
+
+function hangerPartsFor(charm: Charm): HangerPart[] {
+  switch (charm.id) {
+    case 'hamsa':
+      return [gold, { type: 'bead', size: 19, color: '#2d58bc', shadow: '#13296d' }, gold, { ...gold, size: 8 }];
+    case 'nimbu-mirchi':
+      return [];
+    case 'drishti-bommai':
+      return [gold, { type: 'bead', size: 19, color: '#d8211d', shadow: '#8e1110', striped: true }, gold];
+    case 'daruma':
+      return [gold, white, gold];
+    case 'maneki-neko':
+      return [gold, { type: 'bead', size: 19, color: '#e63831', shadow: '#8e1715' }, gold];
+    case 'horseshoe':
+      return charm.hangerAsset ? [{ type: 'horse', source: charm.hangerAsset }] : [gold];
+    case 'scarab':
+      return [gold, { type: 'bead', size: 19, color: '#24b9bb', shadow: '#0b6d74' }, gold, { ...gold, size: 8 }];
+    case 'emoji':
+      return [white, { type: 'clover' }, white];
+    default:
+      return [white, { type: 'bead', size: 19, color: '#2356c7', shadow: '#152a8a' }, white];
+  }
+}
+
 function distancePointToSegment(
   pointX: number,
   pointY: number,
@@ -284,6 +312,7 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     };
     toastTimeoutId: number | null;
     overlayInteractive: boolean;
+    attachmentOffset: number;
   } = {
     selected: null,
     undangled: false,
@@ -300,6 +329,7 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     },
     toastTimeoutId: null,
     overlayInteractive: false,
+    attachmentOffset: 0,
   };
 
   document.body.replaceChildren();
@@ -308,11 +338,14 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   const home = make('div', 'home');
   const threadLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   threadLayer.classList.add('thread-layer');
-  threadLayer.setAttribute('viewBox', '0 0 420 760');
+  threadLayer.setAttribute('viewBox', '0 0 1 1');
   threadLayer.setAttribute('preserveAspectRatio', 'none');
   const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
   const threadGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
   threadGradient.setAttribute('id', 'threadGradient');
+  // Object-bounding-box gradients collapse for a perfectly vertical path.
+  // Use the overlay's coordinate system so the resting thread remains painted.
+  threadGradient.setAttribute('gradientUnits', 'userSpaceOnUse');
   threadGradient.setAttribute('x1', '0');
   threadGradient.setAttribute('y1', '0');
   threadGradient.setAttribute('x2', '0');
@@ -336,10 +369,6 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   threadLayer.append(defs, threadPath, anchorDot);
 
   const hangerStack = make('div', 'hanger-stack');
-  const topBead = make('div', 'bead-white');
-  const eyeBead = make('div', 'bead-eye');
-  const bottomBead = make('div', 'bead-white');
-  hangerStack.append(topBead, eyeBead, bottomBead);
 
   const charm = make('div', 'charm');
   const charmImage = make('img', 'charm-image') as HTMLImageElement;
@@ -379,6 +408,13 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
 
   const anchor = { x: 260, y: 0 };
 
+  function updateThreadViewport() {
+    const width = Math.max(1, window.innerWidth);
+    const height = Math.max(1, window.innerHeight);
+    threadLayer.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    threadGradient.setAttribute('y2', String(height));
+  }
+
   function showToast(message: string) {
     toast.textContent = message;
     toast.classList.remove('hidden');
@@ -392,18 +428,21 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   }
 
   function updateThreadVisual() {
+    updateThreadViewport();
     const charmCenterX = state.physics.x + state.charmSize.width / 2;
-    const charmTopY = state.physics.y;
+    const hangerTopY = Math.round(
+      state.physics.y + state.attachmentOffset - hangerStack.offsetHeight + 3,
+    );
     const swing = clamp(state.physics.vx * 1.8, -18, 18);
     const controlX = anchor.x + (charmCenterX - anchor.x) * 0.52 + swing;
-    const controlY = anchor.y + (charmTopY - anchor.y) * 0.46;
-    const d = `M ${anchor.x} ${anchor.y} Q ${controlX} ${controlY} ${charmCenterX} ${charmTopY}`;
+    const controlY = anchor.y + (hangerTopY - anchor.y) * 0.46;
+    const d = `M ${anchor.x} ${anchor.y} Q ${controlX} ${controlY} ${charmCenterX} ${hangerTopY}`;
     threadPath.setAttribute('d', d);
     anchorDot.setAttribute('cx', String(anchor.x));
     anchorDot.setAttribute('cy', String(anchor.y));
 
     hangerStack.style.left = `${charmCenterX}px`;
-    hangerStack.style.top = `${Math.round(charmTopY - 40)}px`;
+    hangerStack.style.top = `${hangerTopY}px`;
 
     if (state.undangled) {
       threadPath.style.opacity = '0';
@@ -456,7 +495,7 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     const overCharm = isPointInElement(pointerX, pointerY, charm);
     const overHanger = isPointInElement(pointerX, pointerY, hangerStack);
     const threadBottomX = state.physics.x + state.charmSize.width / 2;
-    const threadBottomY = state.physics.y;
+    const threadBottomY = hangerStack.offsetTop;
     const overThread = !state.undangled
       && distancePointToSegment(pointerX, pointerY, anchor.x, anchor.y, threadBottomX, threadBottomY) <= 8;
     const overMenu = !menu.classList.contains('hidden') && isPointInElement(pointerX, pointerY, menu);
@@ -486,9 +525,49 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     }
   }
 
+  function renderHanger(charmData: Charm) {
+    hangerStack.replaceChildren();
+    state.attachmentOffset = Math.round(
+      state.charmSize.height * (attachmentTopRatio[charmData.id] ?? 0),
+    );
+    const parts = hangerPartsFor(charmData);
+    if (parts.length === 0) {
+      const connector = make('div', 'hanger-connector to-charm');
+      const height = Math.max(9, state.attachmentOffset + 5);
+      connector.style.height = `${height}px`;
+      connector.style.flexBasis = `${height}px`;
+      hangerStack.append(connector);
+      return;
+    }
+    for (const [index, part] of parts.entries()) {
+      if (part.type === 'bead') {
+        const bead = make('div', `hanger-bead${part.striped ? ' striped' : ''}`);
+        bead.style.setProperty('--bead-size', `${part.size}px`);
+        bead.style.setProperty('--bead-color', part.color);
+        bead.style.setProperty('--bead-shadow', part.shadow);
+        hangerStack.append(bead);
+      } else if (part.type === 'horse') {
+        const image = make('img', 'hanger-image') as HTMLImageElement;
+        image.alt = '';
+        image.src = part.source ?? '';
+        hangerStack.append(image);
+      } else {
+        hangerStack.append(make('div', 'hanger-clover', '☘'));
+      }
+      const connector = make('div', `hanger-connector${index === parts.length - 1 ? ' to-charm' : ''}`);
+      if (index === parts.length - 1) {
+        const height = Math.max(9, state.attachmentOffset + 5);
+        connector.style.height = `${height}px`;
+        connector.style.flexBasis = `${height}px`;
+      }
+      hangerStack.append(connector);
+    }
+  }
+
   function renderSelected() {
     if (!state.selected) return;
     updateCharmVisual(state.selected);
+    renderHanger(state.selected);
     menuRitual.textContent = state.selected.ritual;
     state.physics.targetX = anchor.x - state.charmSize.width / 2;
     layoutCharm();
@@ -559,7 +638,9 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
       state.physics.targetY = state.physics.y;
       return;
     }
-    state.physics.targetX = anchor.x - state.charmSize.width / 2;
+    const targetX = anchor.x - state.charmSize.width / 2;
+    void api.moveWindow(Math.round(state.physics.x - targetX), 0);
+    state.physics.targetX = targetX;
     state.physics.targetY = 152;
   };
 

@@ -27,7 +27,7 @@ It renders a small, always-on-top desktop charm overlay plus a separate gallery/
 
 ## Project Layout
 
-- [electron/main.ts](electron/main.ts): Electron entry point
+- [src/main.ts](src/main.ts): Electron entry point
 - [src/main.ts](src/main.ts): app bootstrap
 - [src/app/DesktopProgram.ts](src/app/DesktopProgram.ts): runtime composition and wiring
 - [src/app/LuckyCharmApp.ts](src/app/LuckyCharmApp.ts): charm catalog, selection, ritual state

@@ -1,24 +1,4 @@
-type Charm = {
-  id: string;
-  name: string;
-  region: string;
-  description: string;
-  ritual: string;
-  art:
-    | {
-      type: 'emoji';
-      glyph: string;
-      fontSize: number;
-      frame: [number, number];
-    }
-    | {
-      type: 'image';
-      src: string;
-      frame: [number, number];
-    };
-  accent: string;
-  glow: string;
-};
+import type { Charm } from '../shared/Charm';
 
 export type GalleryRendererElectronApi = {
   getCharms: () => Promise<Charm[]>;
