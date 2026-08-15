@@ -65,6 +65,7 @@ export class DesktopWindow {
     });
 
     void window.loadURL('about:blank');
+    this.electronWindow.lockToLocalDocument(window);
     window.setIgnoreMouseEvents(true, { forward: true });
     window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     this.electronWindow.setOverlay(window);

@@ -47,6 +47,7 @@ export class DesktopGalleryWindow {
     });
 
     void this.window.loadURL('about:blank');
+    this.electronWindow.lockToLocalDocument(this.window);
 
     this.window.on('resize', () => {
       if (!this.window || this.window.isDestroyed()) return;

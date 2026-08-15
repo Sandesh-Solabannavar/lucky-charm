@@ -8,6 +8,13 @@ export class ElectronWindow {
     return new BrowserWindow(options);
   }
 
+  lockToLocalDocument(window: BrowserWindow) {
+    window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    window.webContents.on('will-navigate', (event, url) => {
+      if (url !== 'about:blank') event.preventDefault();
+    });
+  }
+
   setOverlay(window: BrowserWindow) {
     this.overlayWindow = window;
   }
