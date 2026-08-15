@@ -103,6 +103,7 @@ export async function runDesktopProgram() {
       settingsStore,
       () => desktopUpdates.check(),
       () => desktopUpdates.download(),
+      () => desktopUpdates.install(),
     );
 
     electronApp.setAccessoryActivationPolicyOnMac();

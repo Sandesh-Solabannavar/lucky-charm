@@ -19,6 +19,7 @@ export class LuckyCharmIpc {
     private readonly settingsStore: DesktopSettingsStore,
     private readonly checkForUpdates: () => Promise<UpdateStatus>,
     private readonly downloadUpdate: () => Promise<UpdateStatus>,
+    private readonly installUpdate: () => UpdateStatus,
   ) {}
 
   install() {
@@ -114,6 +115,12 @@ export class LuckyCharmIpc {
 
     ipcMain.handle(IPC_CHANNEL.downloadUpdate, async () => {
       const updateStatus = await this.downloadUpdate();
+      this.commands.notify(IPC_EVENT.updateStatus, updateStatus);
+      return updateStatus;
+    });
+
+    ipcMain.handle(IPC_CHANNEL.installUpdate, () => {
+      const updateStatus = this.installUpdate();
       this.commands.notify(IPC_EVENT.updateStatus, updateStatus);
       return updateStatus;
     });

@@ -17,6 +17,7 @@ export const IPC_CHANNEL = {
   openSettings: 'open-settings',
   checkUpdates: 'check-updates',
   downloadUpdate: 'download-update',
+  installUpdate: 'install-update',
   quitApp: 'quit-app',
 } as const;
 

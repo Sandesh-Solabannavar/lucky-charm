@@ -48,6 +48,7 @@ const electronApi: PreloadElectronApi = {
   openSettings: () => ipcRenderer.invoke(IPC_CHANNEL.openSettings) as Promise<boolean>,
   checkUpdates: () => ipcRenderer.invoke(IPC_CHANNEL.checkUpdates) as Promise<{ status: string; message: string; version: string }>,
   downloadUpdate: () => ipcRenderer.invoke(IPC_CHANNEL.downloadUpdate) as Promise<{ status: string; message: string; version: string }>,
+  installUpdate: () => ipcRenderer.invoke(IPC_CHANNEL.installUpdate) as Promise<{ status: string; message: string; version: string }>,
   quitApp: () => ipcRenderer.invoke(IPC_CHANNEL.quitApp) as Promise<boolean>,
   onCharmsUpdated: (callback: (charms: Charm[]) => void) => {
     ipcRenderer.on('charms-updated', (_event, charms) => callback(charms));
@@ -118,6 +119,7 @@ declare global {
       openSettings: () => Promise<boolean>;
       checkUpdates: () => Promise<{ status: string; message: string; version: string }>;
       downloadUpdate: () => Promise<{ status: string; message: string; version: string }>;
+      installUpdate: () => Promise<{ status: string; message: string; version: string }>;
       quitApp: () => Promise<boolean>;
       onCharmsUpdated: (callback: (charms: Charm[]) => void) => void;
       onCharmSelected: (callback: (charm: Charm) => void) => void;

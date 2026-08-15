@@ -21,6 +21,7 @@ export type RendererElectronApi = {
   openSettings: () => Promise<boolean>;
   checkUpdates: () => Promise<UpdateStatus>;
   downloadUpdate: () => Promise<UpdateStatus>;
+  installUpdate: () => Promise<UpdateStatus>;
   quitApp: () => Promise<boolean>;
   onCharmsUpdated: (callback: (charms: Charm[]) => void) => void;
   onCharmSelected: (callback: (charm: Charm) => void) => void;
@@ -390,6 +391,7 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   const menuSettings = make('button', 'menu-btn', 'Open Settings');
   const menuUpdates = make('button', 'menu-btn', 'Check for updates');
   let updateAvailable = false;
+  let updateDownloaded = false;
   const sep = make('div', 'menu-sep');
   const menuQuit = make('button', 'menu-btn', 'Quit Lucky Charm');
   menu.append(
@@ -764,9 +766,14 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
 
   menuUpdates.addEventListener('click', async () => {
     closeMenu();
-    const status = updateAvailable ? await api.downloadUpdate() : await api.checkUpdates();
+    const status = updateDownloaded
+      ? await api.installUpdate()
+      : updateAvailable ? await api.downloadUpdate() : await api.checkUpdates();
     updateAvailable = status.status === 'available';
-    menuUpdates.textContent = updateAvailable ? 'Download update' : 'Check for updates';
+    updateDownloaded = status.status === 'downloaded';
+    menuUpdates.textContent = updateDownloaded
+      ? 'Restart to install update'
+      : updateAvailable ? 'Download update' : 'Check for updates';
     showToast(status.message);
   });
 
