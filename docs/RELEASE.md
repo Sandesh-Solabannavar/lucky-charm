@@ -44,4 +44,6 @@ Before public distribution, configure these GitHub Actions secrets and update th
 
 ## Auto-Update Prerequisite
 
-An updater will use the GitHub Release assets created by this workflow. Do not enable automatic update checks until signed installers and updater metadata are published consistently for each supported platform.
+The updater checks GitHub Release assets only in packaged builds when `LUCKY_CHARM_UPDATE_REPOSITORY` is configured as `owner/repository`. It never downloads or installs an update automatically.
+
+Do not configure this variable for public distribution until signed installers and updater metadata are published consistently for each supported platform.

@@ -300,11 +300,4 @@ export class LuckyCharmApp {
     return this.undangled;
   }
 
-  getUpdateStatus() {
-    return {
-      status: 'up-to-date' as const,
-      message: 'Lucky Charm is up to date.',
-      version: '1.1.0',
-    };
-  }
 }

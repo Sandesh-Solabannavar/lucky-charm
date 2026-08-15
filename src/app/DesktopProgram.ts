@@ -9,6 +9,7 @@ import { DesktopWindow } from '../window/DesktopWindow';
 import { LuckyCharmApp } from './LuckyCharmApp';
 import { DesktopCommands } from './DesktopCommands';
 import { DesktopTray } from './DesktopTray';
+import { DesktopUpdates } from '../updates/DesktopUpdates';
 import { DesktopLifecycle } from './DesktopLifecycle';
 
 export async function runDesktopProgram() {
@@ -99,6 +100,7 @@ export async function runDesktopProgram() {
       electronApp,
       commands,
       settingsStore,
+      () => new DesktopUpdates(electronApp.metadata.isPackaged, electronApp.metadata.version).check(),
     );
 
     electronApp.setAccessoryActivationPolicyOnMac();

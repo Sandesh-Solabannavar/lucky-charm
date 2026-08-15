@@ -9,6 +9,7 @@ import {
 } from '../settings/DesktopSettingsStore';
 import { IPC_CHANNEL, IPC_EVENT } from './channels';
 import { isBoolean, isCompactOverlaySize, isFiniteNumberInRange, isIntegerInRange } from './validation';
+import type { UpdateStatus } from '../updates/DesktopUpdates';
 
 export class LuckyCharmIpc {
   constructor(
@@ -16,6 +17,7 @@ export class LuckyCharmIpc {
     private electronApp: ElectronApp,
     private readonly commands: DesktopCommands,
     private readonly settingsStore: DesktopSettingsStore,
+    private readonly checkForUpdates: () => Promise<UpdateStatus>,
   ) {}
 
   install() {
@@ -103,8 +105,8 @@ export class LuckyCharmIpc {
       return true;
     });
 
-    ipcMain.handle(IPC_CHANNEL.checkUpdates, () => {
-      const updateStatus = this.app.getUpdateStatus();
+    ipcMain.handle(IPC_CHANNEL.checkUpdates, async () => {
+      const updateStatus = await this.checkForUpdates();
       this.commands.notify(IPC_EVENT.updateStatus, updateStatus);
       return updateStatus;
     });
