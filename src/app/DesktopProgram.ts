@@ -115,6 +115,7 @@ export async function runDesktopProgram() {
       desktopWindow.hideMain();
     }
     ipc.install();
+    desktopUpdates.start((status) => broadcast('update-status', status));
     lifecycle.register();
     handleExternalUrl = (url) => lifecycle.handleProtocolUrl(url);
     const startupProtocolUrl = process.argv.find((argument) => argument.startsWith('luckycharm://'));

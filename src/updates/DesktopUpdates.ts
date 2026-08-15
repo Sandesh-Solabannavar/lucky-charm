@@ -15,6 +15,7 @@ export class DesktopUpdates {
   private readonly repository = updateRepository(process.env.LUCKY_CHARM_UPDATE_REPOSITORY);
   private updateAvailable = false;
   private updateDownloaded = false;
+  private checkTimer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly isPackaged: boolean,
@@ -51,6 +52,22 @@ export class DesktopUpdates {
       console.warn('Update check failed:', error);
       return { status: 'error', message: 'Unable to check for updates.', version: this.version };
     }
+  }
+
+  start(onStatus: (status: UpdateStatus) => void) {
+    if (!this.isPackaged || !this.repository || this.checkTimer) return;
+    const check = async () => {
+      const status = await this.check();
+      if (status.status === 'available' || status.status === 'error') onStatus(status);
+    };
+    this.checkTimer = setInterval(() => void check(), 6 * 60 * 60 * 1000);
+    setTimeout(() => void check(), 30_000);
+  }
+
+  stop() {
+    if (!this.checkTimer) return;
+    clearInterval(this.checkTimer);
+    this.checkTimer = null;
   }
 
   async download(): Promise<UpdateStatus> {
