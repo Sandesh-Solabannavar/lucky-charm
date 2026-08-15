@@ -43,8 +43,9 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  color: #f6f8ff;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #f8fafc;
 }
 body {
   background: transparent;
@@ -71,10 +72,10 @@ body {
   stroke: url(#threadGradient);
   stroke-width: 3.1;
   stroke-linecap: round;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
 }
 .anchor-dot {
-  fill: rgba(164, 129, 72, 0.9);
+  fill: rgba(164, 129, 72, 0.95);
 }
 .hanger-stack {
   position: absolute;
@@ -127,11 +128,13 @@ body {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
+  filter: drop-shadow(0 4px 14px rgba(0,0,0,0.3));
 }
 .charm-emoji {
   display: block;
   line-height: 1;
   pointer-events: none;
+  filter: drop-shadow(0 4px 14px rgba(0,0,0,0.3));
 }
 .charm-name {
   position: absolute;
@@ -155,52 +158,61 @@ body {
 }
 .toast {
   position: absolute;
-  right: 16px;
-  top: 16px;
-  max-width: 260px;
-  padding: 10px 12px;
+  right: 18px;
+  top: 18px;
+  max-width: 280px;
+  padding: 10px 14px;
   border-radius: 10px;
-  background: rgba(16, 22, 44, 0.94);
-  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(13, 17, 30, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(59, 130, 246, 0.35);
   font-size: 12px;
-  box-shadow: 0 14px 34px rgba(0,0,0,0.4);
+  font-weight: 500;
+  color: #f8fafc;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 0 16px rgba(59, 130, 246, 0.15);
 }
 .toast.hidden { display: none; }
 .menu {
   position: absolute;
-  width: 280px;
-  padding: 8px;
+  width: 270px;
+  padding: 6px;
   border-radius: 12px;
-  background: rgba(18, 24, 52, 0.95);
-  border: 1px solid rgba(255,255,255,0.16);
-  box-shadow: 0 18px 46px rgba(0,0,0,0.52);
-  backdrop-filter: blur(14px);
+  background: rgba(13, 17, 30, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(1.2);
   z-index: 20;
 }
 .menu.hidden { display: none; }
 .menu-title {
   font-size: 11px;
-  color: rgba(205, 220, 255, 0.82);
-  margin: 2px 6px 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(148, 163, 184, 0.85);
+  padding: 5px 8px 6px;
 }
 .menu-btn {
   width: 100%;
   border: 0;
-  border-radius: 8px;
+  border-radius: 7px;
   background: transparent;
-  color: #edf2ff;
+  color: #e2e8f0;
   text-align: left;
-  padding: 8px 9px;
+  padding: 7px 10px;
   font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.12s ease;
 }
 .menu-btn:hover {
-  background: rgba(98, 134, 255, 0.24);
+  background: rgba(59, 130, 246, 0.2);
+  color: #ffffff;
 }
 .menu-sep {
   height: 1px;
-  background: rgba(255,255,255,0.14);
-  margin: 8px 4px;
+  background: rgba(255,255,255,0.07);
+  margin: 5px 4px;
 }
 `;
 

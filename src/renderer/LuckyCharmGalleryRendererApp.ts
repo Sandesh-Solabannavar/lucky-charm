@@ -22,9 +22,25 @@ html, body {
   margin: 0;
   width: 100%;
   height: 100%;
-  background: #0f1526;
-  color: #edf2ff;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  background: #0b0f19;
+  background-image: radial-gradient(circle at 50% -20%, #17213b 0%, #0b0f19 75%);
+  color: #f1f5f9;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
 }
 .app {
   width: 100%;
@@ -33,39 +49,81 @@ html, body {
   flex-direction: column;
 }
 .head {
-  height: 54px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  background: #161e38;
+  padding: 0 148px 0 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: #0f1424;
+  z-index: 10;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  -webkit-app-region: drag;
+}
+.title-logo {
+  font-size: 18px;
+  line-height: 1;
 }
 .title {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f8fafc;
 }
-.tabs {
-  height: 44px;
+.version-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tabs-wrapper {
+  padding: 8px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(11, 15, 26, 0.75);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  background: #1c2747;
+  -webkit-app-region: no-drag;
+}
+.tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  -webkit-app-region: no-drag;
 }
 .tab-btn {
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 8px;
-  background: rgba(255,255,255,0.04);
-  color: #e7eeff;
-  padding: 6px 10px;
-  font-size: 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-app-region: no-drag;
+}
+.tab-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.05);
 }
 .tab-btn.active {
-  background: rgba(62, 104, 252, 0.34);
-  border-color: rgba(124, 165, 255, 0.7);
+  background: rgba(59, 130, 246, 0.22);
+  color: #ffffff;
+  border: 1px solid rgba(96, 165, 250, 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .panel {
   flex: 1;
@@ -73,109 +131,148 @@ html, body {
 }
 .panel.hidden { display: none; }
 .grid {
-  padding: 14px;
+  padding: 20px 22px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 16px;
 }
 .card {
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.11);
-  background: linear-gradient(180deg, rgba(45, 58, 112, 0.84), rgba(22, 29, 62, 0.9));
-  min-height: 180px;
-  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(24, 33, 58, 0.6) 0%, rgba(13, 18, 34, 0.75) 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  min-height: 190px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: flex-start;
-  color: #e7ecff;
+  align-items: center;
+  color: #f1f5f9;
   cursor: pointer;
+  text-align: center;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(10px);
+}
+.card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(96, 165, 250, 0.4);
+  background: linear-gradient(180deg, rgba(30, 42, 74, 0.75) 0%, rgba(17, 24, 46, 0.85) 100%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(59, 130, 246, 0.18);
 }
 .card.selected {
-  border-color: rgba(106, 167, 255, 0.94);
-  box-shadow: 0 0 0 1px rgba(121, 174, 255, 0.34) inset;
+  border-color: #3b82f6;
+  background: linear-gradient(180deg, rgba(32, 48, 88, 0.85) 0%, rgba(18, 28, 54, 0.95) 100%);
+  box-shadow: 0 0 0 1px #3b82f6, 0 8px 24px rgba(59, 130, 246, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 .card-top {
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 64px;
+  height: 68px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
 }
 .card-emoji {
-  font-size: 40px;
+  font-size: 42px;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
 }
 .card-image {
-  max-width: 76px;
-  max-height: 76px;
+  max-width: 68px;
+  max-height: 68px;
   object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
 }
 .card-name {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.3;
-  align-self: center;
-  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f8fafc;
+  margin-top: 2px;
 }
 .badge {
-  align-self: center;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 10px;
-  background: rgba(82, 120, 255, 0.26);
-  color: #d7e4ff;
+  border-radius: 9999px;
+  padding: 2px 9px;
+  font-size: 10.5px;
+  font-weight: 500;
+  background: rgba(59, 130, 246, 0.14);
+  color: #93c5fd;
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  letter-spacing: 0.01em;
 }
 .card-desc {
-  font-size: 11px;
-  line-height: 1.4;
-  color: rgba(216, 226, 255, 0.86);
-  text-align: center;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #94a3b8;
+  margin-top: 2px;
 }
 .panel-body {
-  padding: 16px;
-  font-size: 12px;
-  color: rgba(227, 236, 255, 0.92);
-  line-height: 1.6;
+  max-width: 580px;
+  padding: 24px;
 }
-.panel-body h4 {
-  margin: 0 0 8px;
-  font-size: 13px;
+.panel-title {
+  margin: 0 0 18px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f8fafc;
 }
 .setting-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 152px;
   align-items: center;
   gap: 16px;
-  max-width: 460px;
-  min-height: 68px;
-  padding: 12px;
-  border: 1px solid rgba(255,255,255,0.11);
-  border-radius: 10px;
-  background: rgba(255,255,255,0.04);
+  min-height: 72px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(19, 27, 48, 0.65);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  transition: border-color 0.15s, background 0.15s;
+}
+.setting-row:hover {
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(24, 34, 60, 0.75);
 }
 .setting-row + .setting-row {
-  margin-top: 8px;
+  margin-top: 10px;
 }
 .setting-label {
-  font-weight: 700;
-  color: #edf2ff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f8fafc;
 }
-.setting-help,
+.setting-help {
+  margin: 3px 0 0;
+  color: #94a3b8;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
 .setting-status {
-  margin: 2px 0 0;
-  color: rgba(216, 226, 255, 0.78);
-  font-size: 11px;
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #6ee7b7;
 }
-.setting-status.error { color: #ffb3b3; }
+.setting-status.error { color: #fca5a5; }
 .setting-input {
   width: 68px;
   justify-self: end;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 7px;
-  background: rgba(8, 13, 31, 0.72);
-  color: #edf2ff;
-  padding: 7px 8px;
-  font: inherit;
+  background: rgba(8, 12, 22, 0.85);
+  color: #f8fafc;
+  padding: 6px 9px;
+  font-size: 12.5px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+.setting-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 .setting-inputs {
   display: flex;
@@ -184,10 +281,64 @@ html, body {
 }
 .setting-row.hidden { display: none; }
 .setting-toggle {
-  width: 18px;
-  height: 18px;
+  width: 19px;
+  height: 19px;
   justify-self: end;
-  accent-color: #7ca5ff;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+.about-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(19, 27, 48, 0.65);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  backdrop-filter: blur(12px);
+}
+.about-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.about-logo {
+  font-size: 28px;
+}
+.about-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+.about-desc {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #cbd5e1;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.shortcut-row:last-child { border-bottom: 0; }
+.kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #93c5fd;
 }
 `;
 
@@ -221,14 +372,20 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
 
   const app = make('div', 'app');
   const head = make('div', 'head');
-  const title = make('div', 'title', 'Lucky Charm');
-  head.append(title);
+  const titleGroup = make('div', 'title-group');
+  const titleLogo = make('span', 'title-logo', '🧿');
+  const title = make('span', 'title', 'Lucky Charm');
+  const versionBadge = make('span', 'version-badge', 'v0.1.0');
+  titleGroup.append(titleLogo, title, versionBadge);
+  head.append(titleGroup);
 
+  const tabsWrapper = make('div', 'tabs-wrapper');
   const tabs = make('div', 'tabs');
   const tabGallery = make('button', 'tab-btn active', 'Gallery');
   const tabGeneral = make('button', 'tab-btn', 'General');
   const tabAbout = make('button', 'tab-btn', 'About');
   tabs.append(tabGallery, tabGeneral, tabAbout);
+  tabsWrapper.append(tabs);
 
   const panelGallery = make('div', 'panel');
   const grid = make('div', 'grid');
@@ -236,7 +393,7 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
 
   const panelGeneral = make('div', 'panel hidden');
   const generalBody = make('div', 'panel-body');
-  const generalTitle = make('h4', undefined, 'General');
+  const generalTitle = make('h4', 'panel-title', 'General Settings');
   const compactOverlaySizeRow = make('div', 'setting-row');
   const compactOverlaySizeCopy = make('div');
   const compactOverlaySizeLabel = make('div', 'setting-label', 'Compact overlay size');
@@ -273,10 +430,34 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
 
   const panelAbout = make('div', 'panel hidden');
   const aboutBody = make('div', 'panel-body');
-  aboutBody.innerHTML = '<h4>About</h4><p>Lucky Charm desktop utility.</p>';
+  const aboutCard = make('div', 'about-card');
+  const aboutHeader = make('div', 'about-header');
+  const aboutLogo = make('span', 'about-logo', '🧿');
+  const aboutTitle = make('span', 'about-title', 'Lucky Charm Desktop');
+  aboutHeader.append(aboutLogo, aboutTitle);
+  const aboutDesc = make(
+    'p',
+    'about-desc',
+    'A customizable, physics-driven desktop amulet companion inspired by traditional world charms. Dangles smoothly from your top display edge with realistic pendulum tension and interactive rituals.',
+  );
+  const shortcutList = make('div', 'shortcut-list');
+  const shortcuts: Array<[string, string]> = [
+    ['Toggle Charm Overlay', 'Ctrl/Cmd + Shift + D'],
+    ['Perform Charm Ritual', 'Ctrl/Cmd + Shift + S'],
+    ['Open Gallery & Settings', 'Ctrl/Cmd + Shift + G'],
+  ];
+  for (const [action, key] of shortcuts) {
+    const row = make('div', 'shortcut-row');
+    const label = make('span', undefined, action);
+    const kbd = make('kbd', 'kbd', key);
+    row.append(label, kbd);
+    shortcutList.append(row);
+  }
+  aboutCard.append(aboutHeader, aboutDesc, shortcutList);
+  aboutBody.append(aboutCard);
   panelAbout.append(aboutBody);
 
-  app.append(head, tabs, panelGallery, panelGeneral, panelAbout);
+  app.append(head, tabsWrapper, panelGallery, panelGeneral, panelAbout);
   document.body.append(app);
 
   function setTab(nextTab: 'gallery' | 'general' | 'about') {

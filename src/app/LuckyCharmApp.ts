@@ -45,7 +45,7 @@ const baseCharms: Charm[] = [
   },
   {
     id: 'nimbu-mirchi',
-    name: 'Nimbu-mirchi',
+    name: 'Nimbu Mirchi',
     region: 'India',
     description: 'Seven chilies and a lemon hung at the threshold to turn away misfortune. Replace it with a fresh one when the week is up.',
     ritual: 'Hang a fresh garland',
@@ -87,7 +87,7 @@ const baseCharms: Charm[] = [
   },
   {
     id: 'maneki-neko',
-    name: 'Maneki-neko',
+    name: 'Maneki Neko',
     region: 'Japan',
     description: 'A beckoning cat that invites good fortune in. Call on it and watch its raised paw wave.',
     ritual: 'Beckon good fortune',

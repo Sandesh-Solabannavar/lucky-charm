@@ -5,6 +5,7 @@ import { ElectronWindow } from '../electron/ElectronWindow';
 
 export class DesktopGalleryWindow {
   private window: BrowserWindow | null = null;
+  private boundsPersistTimer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly electronWindow: ElectronWindow,
@@ -25,6 +26,21 @@ export class DesktopGalleryWindow {
     const fallbackY = display.workArea.y + Math.max(20, Math.round((display.workArea.height - fallbackHeight) / 2));
     const saved = this.reconcileBounds(this.getInitialBounds());
 
+    const isMac = process.platform === 'darwin';
+    const titleBarOptions = isMac
+      ? {
+        titleBarStyle: 'hiddenInset' as const,
+        trafficLightPosition: { x: 16, y: 18 },
+      }
+      : {
+        titleBarStyle: 'hidden' as const,
+        titleBarOverlay: {
+          color: '#0f1424',
+          symbolColor: '#f1f5f9',
+          height: 52,
+        },
+      };
+
     this.window = this.electronWindow.create({
       x: saved?.x ?? fallbackX,
       y: saved?.y ?? fallbackY,
@@ -33,10 +49,9 @@ export class DesktopGalleryWindow {
       minWidth: 820,
       minHeight: 560,
       show: false,
-      frame: true,
-      transparent: false,
-      backgroundColor: '#11151f',
+      backgroundColor: '#0b0f19',
       autoHideMenuBar: true,
+      ...titleBarOptions,
       webPreferences: {
         preload: path.join(__dirname, 'preload.cjs'),
         contextIsolation: true,
@@ -49,18 +64,25 @@ export class DesktopGalleryWindow {
     void this.window.loadURL('about:blank');
     this.electronWindow.lockToLocalDocument(this.window);
 
-    this.window.on('resize', () => {
-      if (!this.window || this.window.isDestroyed()) return;
-      const [x = 0, y = 0] = this.window.getPosition();
-      const [width = 1000, height = 700] = this.window.getSize();
-      this.onBoundsChanged({ x, y, width, height });
-    });
+    const scheduleBoundsPersist = () => {
+      if (this.boundsPersistTimer) {
+        clearTimeout(this.boundsPersistTimer);
+      }
+      this.boundsPersistTimer = setTimeout(() => {
+        this.boundsPersistTimer = null;
+        this.persistCurrentBounds();
+      }, 250);
+    };
 
-    this.window.on('move', () => {
-      if (!this.window || this.window.isDestroyed()) return;
-      const [x = 0, y = 0] = this.window.getPosition();
-      const [width = 1000, height = 700] = this.window.getSize();
-      this.onBoundsChanged({ x, y, width, height });
+    this.window.on('resize', scheduleBoundsPersist);
+    this.window.on('move', scheduleBoundsPersist);
+
+    this.window.on('close', () => {
+      if (this.boundsPersistTimer) {
+        clearTimeout(this.boundsPersistTimer);
+        this.boundsPersistTimer = null;
+      }
+      this.persistCurrentBounds();
     });
 
     this.window.on('closed', () => {
@@ -69,6 +91,13 @@ export class DesktopGalleryWindow {
     });
 
     return this.window;
+  }
+
+  private persistCurrentBounds() {
+    if (!this.window || this.window.isDestroyed()) return;
+    const [x = 0, y = 0] = this.window.getPosition();
+    const [width = 1000, height = 700] = this.window.getSize();
+    this.onBoundsChanged({ x, y, width, height });
   }
 
   open(tab: 'gallery' | 'general' | 'about' = 'gallery') {
