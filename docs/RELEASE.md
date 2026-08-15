@@ -42,6 +42,8 @@ Before public distribution, configure these GitHub Actions secrets and update th
 - Windows code-signing credentials and certificate profile.
 - macOS Developer ID certificate, certificate password, Apple API key, key ID, and issuer ID.
 
+Keep `LUCKY_CHARM_UPDATE_REPOSITORY` unset until signing has been verified on each platform. This prevents unsigned builds from presenting a usable update path.
+
 ## Auto-Update Prerequisite
 
 The updater checks GitHub Release assets only in packaged builds when `LUCKY_CHARM_UPDATE_REPOSITORY` is configured as `owner/repository`. It never downloads or installs an update automatically.

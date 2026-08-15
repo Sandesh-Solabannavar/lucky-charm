@@ -94,6 +94,7 @@ export async function runDesktopProgram() {
       settings.shortcuts,
       () => commands.performRitual(),
       () => commands.setGalleryOpen(true),
+      () => desktopUpdates.stop(),
     );
 
     const ipc = new LuckyCharmIpc(

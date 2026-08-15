@@ -9,6 +9,7 @@ export class DesktopLifecycle {
     private readonly shortcuts: ShortcutConfig,
     private readonly onRitualShortcut: () => void,
     private readonly onGalleryShortcut: () => void,
+    private readonly onWillQuit?: () => void,
   ) {}
 
   register() {
@@ -33,6 +34,7 @@ export class DesktopLifecycle {
     });
 
     this.electronApp.on('will-quit', () => {
+      this.onWillQuit?.();
       this.electronApp.unregisterAllShortcuts();
     });
   }
