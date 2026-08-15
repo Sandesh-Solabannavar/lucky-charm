@@ -12,11 +12,18 @@
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "test": "vitest run",
         "check": "pnpm run typecheck && pnpm run test",
-        "package": "pnpm run check && pnpm run build && electron-builder"
+        "package": "pnpm run check && pnpm run build && electron-builder --publish never",
+        "dist:mac": "pnpm run package -- --mac dmg zip",
+        "dist:win": "pnpm run package -- --win nsis",
+        "dist:linux": "pnpm run package -- --linux AppImage"
     },
     "build": {
         "appId": "com.luckycharm.desktop",
         "productName": "Lucky Charm",
+        "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+        "directories": {
+            "output": "release"
+        },
         "files": [
             "dist-electron/**/*",
             "assets/**/*",
@@ -31,9 +38,14 @@
         },
         "win": {
             "target": [
-                "portable",
                 "nsis"
             ]
+        },
+        "linux": {
+            "target": [
+                "AppImage"
+            ],
+            "category": "Utility"
         }
     },
     "devDependencies": {
