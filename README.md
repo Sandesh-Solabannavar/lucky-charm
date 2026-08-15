@@ -76,7 +76,12 @@ This runs build output generation, then launches Electron.
 Configured targets:
 
 - macOS: dmg, zip
-- Windows: portable, nsis
+- Windows: nsis
+- Linux: AppImage
+
+## Releases
+
+See [docs/RELEASE.md](docs/RELEASE.md) for the tag-based release workflow, platform artifacts, and signing prerequisites.
 
 ## Settings Storage
 
