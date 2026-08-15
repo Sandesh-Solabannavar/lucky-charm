@@ -37,6 +37,9 @@ jobs:
       - name: Run quality checks
         run: pnpm run check
 
+      - name: Validate release configuration
+        run: pnpm run release:smoke
+
       - name: Build Electron bundles
         run: pnpm run build
 

@@ -15,7 +15,8 @@
         "package": "pnpm run check && pnpm run build && electron-builder --publish never",
         "dist:mac": "pnpm run package -- --mac dmg zip",
         "dist:win": "pnpm run package -- --win nsis",
-        "dist:linux": "pnpm run package -- --linux AppImage"
+        "dist:linux": "pnpm run package -- --linux AppImage",
+        "release:smoke": "node scripts/release-smoke.mjs"
     },
     "build": {
         "appId": "com.luckycharm.desktop",
