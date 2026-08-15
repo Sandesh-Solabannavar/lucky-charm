@@ -1,7 +1,7 @@
 import { autoUpdater } from 'electron-updater';
 
 export type UpdateStatus = {
-  status: 'available' | 'up-to-date' | 'unavailable' | 'error';
+  status: 'available' | 'downloaded' | 'up-to-date' | 'unavailable' | 'error';
   message: string;
   version: string;
 };
@@ -13,6 +13,7 @@ function updateRepository(value: string | undefined) {
 
 export class DesktopUpdates {
   private readonly repository = updateRepository(process.env.LUCKY_CHARM_UPDATE_REPOSITORY);
+  private updateAvailable = false;
 
   constructor(
     private readonly isPackaged: boolean,
@@ -34,8 +35,10 @@ export class DesktopUpdates {
       autoUpdater.setFeedURL({ provider: 'github', ...this.repository });
       const result = await autoUpdater.checkForUpdates();
       if (!result?.updateInfo) {
+        this.updateAvailable = false;
         return { status: 'up-to-date', message: 'Lucky Charm is up to date.', version: this.version };
       }
+      this.updateAvailable = true;
       return {
         status: 'available',
         message: `Lucky Charm ${result.updateInfo.version} is available.`,
@@ -44,6 +47,19 @@ export class DesktopUpdates {
     } catch (error) {
       console.warn('Update check failed:', error);
       return { status: 'error', message: 'Unable to check for updates.', version: this.version };
+    }
+  }
+
+  async download(): Promise<UpdateStatus> {
+    if (!this.isPackaged || !this.repository || !this.updateAvailable) {
+      return { status: 'unavailable', message: 'No update is ready to download.', version: this.version };
+    }
+    try {
+      await autoUpdater.downloadUpdate();
+      return { status: 'downloaded', message: 'Update downloaded. Restart Lucky Charm to install it.', version: this.version };
+    } catch (error) {
+      console.warn('Update download failed:', error);
+      return { status: 'error', message: 'Unable to download the update.', version: this.version };
     }
   }
 }
