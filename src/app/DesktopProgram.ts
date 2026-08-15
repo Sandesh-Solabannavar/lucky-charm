@@ -31,6 +31,7 @@ export async function runDesktopProgram() {
 
     const settingsStore = new DesktopSettingsStore(electronApp.getPath('userData'));
     const settings = settingsStore.load();
+    const desktopUpdates = new DesktopUpdates(electronApp.metadata.isPackaged, electronApp.metadata.version);
     const charmAssetsDirectory = path.join(electronApp.metadata.appPath, 'assets', 'charms');
     const luckyCharmApp = new LuckyCharmApp(settings.selectedCharmId, charmAssetsDirectory);
 
@@ -100,7 +101,8 @@ export async function runDesktopProgram() {
       electronApp,
       commands,
       settingsStore,
-      () => new DesktopUpdates(electronApp.metadata.isPackaged, electronApp.metadata.version).check(),
+      () => desktopUpdates.check(),
+      () => desktopUpdates.download(),
     );
 
     electronApp.setAccessoryActivationPolicyOnMac();

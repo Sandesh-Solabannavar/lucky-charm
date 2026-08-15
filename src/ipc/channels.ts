@@ -16,6 +16,7 @@ export const IPC_CHANNEL = {
   toggleUndangle: 'toggle-undangle',
   openSettings: 'open-settings',
   checkUpdates: 'check-updates',
+  downloadUpdate: 'download-update',
   quitApp: 'quit-app',
 } as const;
 
