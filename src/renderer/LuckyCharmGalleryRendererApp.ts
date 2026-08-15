@@ -199,11 +199,15 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: cardDrop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transform-origin: 50% 0%;
   transition: transform 0.25s ease-out;
+  transform: translateY(-90px);
+  opacity: 0;
 }
-.card:hover .card-dangle-assembly {
+.card-dangle-assembly.animate-drop {
+  animation: cardDrop 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.card:hover .card-dangle-assembly.animate-drop {
   transform: translateY(-2px) rotate(3.5deg);
 }
 .card-thread {
@@ -549,17 +553,52 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
     }
   }
 
+  let cardObserver: IntersectionObserver | null = null;
+
+  function updateCardSelection() {
+    const cards = Array.from(grid.querySelectorAll('.card')) as HTMLElement[];
+    cards.forEach((card) => {
+      const charmId = card.getAttribute('data-charm-id');
+      const isSelected = state.selected && state.selected.id === charmId;
+      card.classList.toggle('selected', Boolean(isSelected));
+    });
+  }
+
   function renderGrid() {
+    if (cardObserver) {
+      cardObserver.disconnect();
+      cardObserver = null;
+    }
+
     grid.replaceChildren();
+
+    if (typeof IntersectionObserver !== 'undefined') {
+      cardObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const assembly = entry.target.querySelector('.card-dangle-assembly');
+            if (!assembly) return;
+            if (entry.isIntersecting) {
+              assembly.classList.add('animate-drop');
+            } else {
+              assembly.classList.remove('animate-drop');
+            }
+          });
+        },
+        { root: panelGallery, threshold: 0.1 },
+      );
+    }
+
     state.charms.forEach((charm, index) => {
       const card = make('button', 'card');
+      card.setAttribute('data-charm-id', charm.id);
       if (state.selected && state.selected.id === charm.id) {
         card.classList.add('selected');
       }
 
       const stage = make('div', 'card-dangle-stage');
       const assembly = make('div', 'card-dangle-assembly');
-      assembly.style.animationDelay = `${index * 40}ms`;
+      assembly.style.animationDelay = `${(index % 8) * 35}ms`;
 
       const thread = make('div', 'card-thread');
       assembly.append(thread);
@@ -606,9 +645,17 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
       const desc = make('div', 'card-desc', charm.description);
       card.append(stage, name, badge, desc);
       card.addEventListener('click', async () => {
+        state.selected = charm;
+        updateCardSelection();
         await api.selectCharm(charm.id);
       });
       grid.append(card);
+
+      if (cardObserver) {
+        cardObserver.observe(card);
+      } else {
+        assembly.classList.add('animate-drop');
+      }
     });
   }
 
@@ -658,7 +705,7 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
 
   api.onCharmSelected((charm) => {
     state.selected = charm;
-    renderGrid();
+    updateCardSelection();
   });
 
   api.onGalleryTab((tab) => {
