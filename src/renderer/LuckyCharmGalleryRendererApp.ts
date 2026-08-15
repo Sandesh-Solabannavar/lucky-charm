@@ -1,4 +1,5 @@
 import type { Charm } from '../shared/Charm';
+import { hangerPartsFor } from '../shared/hanger';
 
 export type GalleryRendererElectronApi = {
   getCharms: () => Promise<Charm[]>;
@@ -130,6 +131,25 @@ html, body {
   overflow: auto;
 }
 .panel.hidden { display: none; }
+@keyframes cardDrop {
+  0% {
+    transform: translateY(-90px);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(6px);
+  }
+  85% {
+    transform: translateY(-3px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 .grid {
   padding: 20px 22px;
   display: grid;
@@ -141,8 +161,8 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, rgba(24, 33, 58, 0.6) 0%, rgba(13, 18, 34, 0.75) 100%);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  min-height: 190px;
-  padding: 16px;
+  min-height: 220px;
+  padding: 12px 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -152,6 +172,7 @@ html, body {
   text-align: center;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: blur(10px);
+  overflow: hidden;
 }
 .card:hover {
   transform: translateY(-2px);
@@ -164,24 +185,79 @@ html, body {
   background: linear-gradient(180deg, rgba(32, 48, 88, 0.85) 0%, rgba(18, 28, 54, 0.95) 100%);
   box-shadow: 0 0 0 1px #3b82f6, 0 8px 24px rgba(59, 130, 246, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
-.card-top {
+.card-dangle-stage {
+  position: relative;
   width: 100%;
+  height: 124px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 68px;
+  align-items: flex-start;
   border-radius: 10px;
-  background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 65%, rgba(59, 130, 246, 0.08) 0%, transparent 75%);
+}
+.card-dangle-assembly {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: cardDrop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: 50% 0%;
+  transition: transform 0.25s ease-out;
+}
+.card:hover .card-dangle-assembly {
+  transform: translateY(-2px) rotate(3.5deg);
+}
+.card-thread {
+  width: 2px;
+  height: 24px;
+  background: linear-gradient(180deg, #d6ae60 0%, #9f7b40 100%);
+  border-radius: 1px;
+}
+.card-hanger-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.card-bead {
+  width: var(--bead-size, 10px);
+  height: var(--bead-size, 10px);
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, var(--bead-color, #f1f2f7) 55%, var(--bead-shadow, #d8dbe8) 100%);
+  box-shadow: inset -1px -1px 2px rgba(0, 0, 0, 0.4);
+}
+.card-bead.striped {
+  background: repeating-linear-gradient(0deg, #d8211d 0 26%, #ffe266 26% 42%, #d8211d 42% 68%, #ffe266 68% 84%, #d8211d 84% 100%);
+}
+.card-hanger-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+.card-clover {
+  font-size: 13px;
+  line-height: 1;
+}
+.card-connector {
+  width: 1.5px;
+  height: 3px;
+  background: #9f7b40;
+}
+.card-charm-container {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .card-emoji {
-  font-size: 42px;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
+  font-size: 38px;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
 }
 .card-image {
-  max-width: 68px;
-  max-height: 68px;
+  max-width: 50px;
+  max-height: 50px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
 }
 .card-name {
   font-size: 13.5px;
@@ -468,34 +544,72 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
     panelGallery.classList.toggle('hidden', nextTab !== 'gallery');
     panelGeneral.classList.toggle('hidden', nextTab !== 'general');
     panelAbout.classList.toggle('hidden', nextTab !== 'about');
+    if (nextTab === 'gallery') {
+      renderGrid();
+    }
   }
 
   function renderGrid() {
     grid.replaceChildren();
-    for (const charm of state.charms) {
+    state.charms.forEach((charm, index) => {
       const card = make('button', 'card');
       if (state.selected && state.selected.id === charm.id) {
         card.classList.add('selected');
       }
-      const top = make('div', 'card-top');
+
+      const stage = make('div', 'card-dangle-stage');
+      const assembly = make('div', 'card-dangle-assembly');
+      assembly.style.animationDelay = `${index * 40}ms`;
+
+      const thread = make('div', 'card-thread');
+      assembly.append(thread);
+
+      const hangerParts = hangerPartsFor(charm);
+      if (hangerParts.length > 0) {
+        const hangerStack = make('div', 'card-hanger-stack');
+        for (const part of hangerParts) {
+          if (part.type === 'bead') {
+            const bead = make('div', `card-bead${part.striped ? ' striped' : ''}`);
+            const miniSize = Math.max(7, Math.round(part.size * 0.65));
+            bead.style.setProperty('--bead-size', `${miniSize}px`);
+            bead.style.setProperty('--bead-color', part.color);
+            bead.style.setProperty('--bead-shadow', part.shadow);
+            hangerStack.append(bead);
+          } else if (part.type === 'horse') {
+            const img = make('img', 'card-hanger-img') as HTMLImageElement;
+            img.src = part.source ?? '';
+            hangerStack.append(img);
+          } else {
+            hangerStack.append(make('div', 'card-clover', '☘'));
+          }
+          const conn = make('div', 'card-connector');
+          hangerStack.append(conn);
+        }
+        assembly.append(hangerStack);
+      }
+
+      const charmContainer = make('div', 'card-charm-container');
       if (charm.art.type === 'image') {
         const image = make('img', 'card-image') as HTMLImageElement;
         image.src = charm.art.src;
         image.alt = charm.name;
-        top.append(image);
+        charmContainer.append(image);
       } else {
         const emoji = make('div', 'card-emoji', charm.art.glyph);
-        top.append(emoji);
+        charmContainer.append(emoji);
       }
+      assembly.append(charmContainer);
+      stage.append(assembly);
+
       const name = make('div', 'card-name', charm.name);
       const badge = make('div', 'badge', charm.region);
       const desc = make('div', 'card-desc', charm.description);
-      card.append(top, name, badge, desc);
+      card.append(stage, name, badge, desc);
       card.addEventListener('click', async () => {
         await api.selectCharm(charm.id);
       });
       grid.append(card);
-    }
+    });
   }
 
   function renderCompactOverlaySize() {

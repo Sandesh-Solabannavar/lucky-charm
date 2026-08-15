@@ -1,4 +1,5 @@
 import type { Charm } from '../shared/Charm';
+import { attachmentTopRatio, hangerPartsFor, type HangerPart } from '../shared/hanger';
 
 type UpdateStatus = {
   status: string;
@@ -174,12 +175,12 @@ body {
 .toast.hidden { display: none; }
 .menu {
   position: absolute;
-  width: 270px;
+  width: 250px;
   padding: 6px;
   border-radius: 12px;
-  background: rgba(13, 17, 30, 0.88);
+  background: rgba(13, 17, 30, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px) saturate(1.2);
   z-index: 20;
 }
@@ -200,19 +201,111 @@ body {
   color: #e2e8f0;
   text-align: left;
   padding: 7px 10px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   transition: all 0.12s ease;
+  user-select: none;
 }
-.menu-btn:hover {
-  background: rgba(59, 130, 246, 0.2);
+.menu-btn:hover,
+.menu-btn.active {
+  background: rgba(59, 130, 246, 0.22);
   color: #ffffff;
+}
+.menu-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.menu-btn-icon {
+  font-size: 13px;
+  opacity: 0.9;
+  width: 16px;
+  display: inline-flex;
+  justify-content: center;
+}
+.menu-shortcut {
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+.menu-arrow {
+  font-size: 14px;
+  color: #94a3b8;
 }
 .menu-sep {
   height: 1px;
-  background: rgba(255,255,255,0.07);
+  background: rgba(255, 255, 255, 0.08);
   margin: 5px 4px;
+}
+.submenu {
+  position: absolute;
+  width: 220px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(13, 17, 30, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(1.2);
+  z-index: 25;
+}
+.submenu.hidden { display: none; }
+.submenu-item {
+  width: 100%;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #e2e8f0;
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.12s ease;
+}
+.submenu-item:hover {
+  background: rgba(59, 130, 246, 0.22);
+  color: #ffffff;
+}
+.submenu-item.selected {
+  color: #ffffff;
+}
+.submenu-check {
+  width: 14px;
+  font-size: 12px;
+  color: #60a5fa;
+  font-weight: 700;
+  display: inline-flex;
+  justify-content: center;
+}
+.submenu-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.submenu-icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+.submenu-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 `;
 
@@ -225,52 +318,6 @@ function make<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string,
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
-}
-
-type HangerPart =
-  | { type: 'bead'; size: number; color: string; shadow: string; striped?: boolean }
-  | { type: 'horse'; source?: string }
-  | { type: 'clover' };
-
-const gold = { type: 'bead', size: 12, color: '#f7c743', shadow: '#bd7a16' } as const;
-const white = { type: 'bead', size: 14, color: '#f8f8fc', shadow: '#c7ccd8' } as const;
-
-// Transparent top padding measured from the shipped PNGs. The cord must reach
-// the visible attachment loop, not just the top of the image element.
-const attachmentTopRatio: Record<string, number> = {
-  // Emoji glyphs are vertically centered inside their fixed-size charm box.
-  nazar: 18 / 74,
-  hamsa: 16 / 400,
-  'nimbu-mirchi': 38 / 275,
-  'drishti-bommai': 15 / 400,
-  daruma: 12 / 400,
-  'maneki-neko': 11 / 400,
-  horseshoe: 54 / 400,
-  scarab: 53 / 304,
-  emoji: 18 / 74,
-};
-
-function hangerPartsFor(charm: Charm): HangerPart[] {
-  switch (charm.id) {
-    case 'hamsa':
-      return [gold, { type: 'bead', size: 19, color: '#2d58bc', shadow: '#13296d' }, gold, { ...gold, size: 8 }];
-    case 'nimbu-mirchi':
-      return [];
-    case 'drishti-bommai':
-      return [gold, { type: 'bead', size: 19, color: '#d8211d', shadow: '#8e1110', striped: true }, gold];
-    case 'daruma':
-      return [gold, white, gold];
-    case 'maneki-neko':
-      return [gold, { type: 'bead', size: 19, color: '#e63831', shadow: '#8e1715' }, gold];
-    case 'horseshoe':
-      return charm.hangerAsset ? [{ type: 'horse', source: charm.hangerAsset }] : [gold];
-    case 'scarab':
-      return [gold, { type: 'bead', size: 19, color: '#24b9bb', shadow: '#0b6d74' }, gold, { ...gold, size: 8 }];
-    case 'emoji':
-      return [white, { type: 'clover' }, white];
-    default:
-      return [white, { type: 'bead', size: 19, color: '#2356c7', shadow: '#152a8a' }, white];
-  }
 }
 
 function distancePointToSegment(
@@ -395,31 +442,63 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   const toast = make('div', 'toast hidden');
   home.append(threadLayer, hangerStack, charm, charmName, tip, toast);
 
+  let allCharms: Charm[] = [];
+  const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const modKey = isMac ? '⌘' : 'Ctrl+';
+
   const menu = make('div', 'menu hidden');
-  const menuTitle = make('div', 'menu-title', 'LuckyCharm');
-  const menuUndangle = make('button', 'menu-btn', 'Undangle');
-  const menuRitual = make('button', 'menu-btn', 'Hang a fresh garland');
-  const menuChoose = make('button', 'menu-btn', 'Choose a charm');
-  const menuGallery = make('button', 'menu-btn', 'Open the gallery');
-  const menuSettings = make('button', 'menu-btn', 'Open Settings');
-  const menuUpdates = make('button', 'menu-btn', 'Check for updates');
+  const menuTitle = make('div', 'menu-title', 'Lucky Charm');
+
+  const createMenuItem = (label: string, shortcut = '', iconHtml = '', arrow = false) => {
+    const btn = make('button', 'menu-btn');
+    const left = make('div', 'menu-btn-left');
+    if (iconHtml) {
+      const icon = make('span', 'menu-btn-icon');
+      icon.innerHTML = iconHtml;
+      left.append(icon);
+    }
+    const labelSpan = make('span', 'menu-btn-label', label);
+    left.append(labelSpan);
+    btn.append(left);
+    if (shortcut) {
+      const shortcutSpan = make('span', 'menu-shortcut', shortcut);
+      btn.append(shortcutSpan);
+    }
+    if (arrow) {
+      const arrowSpan = make('span', 'menu-arrow', '›');
+      btn.append(arrowSpan);
+    }
+    return { btn, labelSpan };
+  };
+
+  const menuUndangle = createMenuItem('Undangle', `${modKey}D`);
+  const menuRitual = createMenuItem('Hang a fresh garland', `${modKey}X`);
+  const sep1 = make('div', 'menu-sep');
+  const menuChoose = createMenuItem('Choose a charm', '', '', true);
+  const menuGallery = createMenuItem('Open the gallery', '');
+  const sep2 = make('div', 'menu-sep');
+  const menuSettings = createMenuItem('Open settings', `${modKey},`, '⚙');
+  const menuUpdates = createMenuItem('Check for updates', '');
   let updateAvailable = false;
   let updateDownloaded = false;
-  const sep = make('div', 'menu-sep');
-  const menuQuit = make('button', 'menu-btn', 'Quit Lucky Charm');
+  const menuQuit = createMenuItem('Quit Lucky Charm', `${modKey}Q`, '⌧');
+
   menu.append(
     menuTitle,
-    menuUndangle,
-    menuRitual,
-    menuChoose,
-    menuGallery,
-    menuSettings,
-    menuUpdates,
-    sep,
-    menuQuit,
+    menuUndangle.btn,
+    menuRitual.btn,
+    sep1,
+    menuChoose.btn,
+    menuGallery.btn,
+    sep2,
+    menuSettings.btn,
+    menuUpdates.btn,
+    menuQuit.btn,
   );
 
-  app.append(home, menu);
+  const submenu = make('div', 'submenu hidden');
+
+  app.append(home, menu, submenu);
   document.body.append(app);
 
   const anchor = { x: 260, y: 0 };
@@ -608,14 +687,25 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     }
   }
 
-  function renderSelected() {
+  function triggerDropAnimation() {
+    state.physics.x = anchor.x - state.charmSize.width / 2;
+    state.physics.y = -state.charmSize.height - 40;
+    state.physics.vx = (Math.random() - 0.5) * 50;
+    state.physics.vy = 450;
+  }
+
+  function renderSelected(triggerDrop = false) {
     if (!state.selected) return;
     updateCharmVisual(state.selected);
     renderHanger(state.selected);
-    menuRitual.textContent = state.selected.ritual;
+    menuRitual.labelSpan.textContent = state.selected.ritual;
     state.physics.targetX = anchor.x - state.charmSize.width / 2;
     state.threadLength = Math.max(40, state.physics.targetY + state.attachmentOffset - anchor.y);
-    resetCharmToThreadRest();
+    if (triggerDrop) {
+      triggerDropAnimation();
+    } else {
+      resetCharmToThreadRest();
+    }
     layoutCharm();
   }
 
@@ -664,8 +754,9 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
       api.getCharms(),
       api.getSelectedCharm(),
     ]);
+    allCharms = items;
     state.selected = selected ?? items[0] ?? null;
-    renderSelected();
+    renderSelected(true);
     layoutCharm();
     startPhysicsLoop();
   }
@@ -722,6 +813,85 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     releaseCharm();
   });
 
+  function renderSubmenuCharms() {
+    submenu.replaceChildren();
+    for (const item of allCharms) {
+      const btn = make('button', 'submenu-item');
+      const isSelected = state.selected && state.selected.id === item.id;
+      if (isSelected) {
+        btn.classList.add('selected');
+      }
+      const check = make('span', 'submenu-check', isSelected ? '✓' : '');
+      const icon = make('span', 'submenu-icon');
+      if (item.art.type === 'image') {
+        const img = make('img') as HTMLImageElement;
+        img.src = item.art.src;
+        img.alt = item.name;
+        icon.append(img);
+      } else {
+        icon.textContent = item.art.glyph;
+      }
+      const name = make('span', 'submenu-name', item.name);
+      btn.append(check, icon, name);
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        closeMenu();
+        await api.selectCharm(item.id);
+      });
+      submenu.append(btn);
+    }
+  }
+
+  function placeMenu(clientX: number, clientY: number) {
+    const maxX = window.innerWidth - 260;
+    const maxY = window.innerHeight - 340;
+    const x = Math.max(8, Math.min(maxX, clientX));
+    const y = Math.max(8, Math.min(maxY, clientY));
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+
+    const submenuWidth = 220;
+    if (x + 250 + submenuWidth + 8 > window.innerWidth) {
+      submenu.style.left = `${Math.max(8, x - submenuWidth - 4)}px`;
+    } else {
+      submenu.style.left = `${x + 252}px`;
+    }
+    submenu.style.top = `${y + 42}px`;
+  }
+
+  function closeMenu() {
+    menu.classList.add('hidden');
+    submenu.classList.add('hidden');
+    menuChoose.btn.classList.remove('active');
+    void syncOverlayInteractivity(window.innerWidth + 1000, window.innerHeight + 1000);
+  }
+
+  async function setOverlayInteractive(nextInteractive: boolean) {
+    if (state.overlayInteractive === nextInteractive) return;
+    state.overlayInteractive = nextInteractive;
+    await api.setOverlayInteractive(nextInteractive);
+  }
+
+  function isPointInElement(x: number, y: number, element: Element): boolean {
+    const rect = element.getBoundingClientRect();
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  }
+
+  async function syncOverlayInteractivity(pointerX: number, pointerY: number) {
+    const overCharm = isPointInElement(pointerX, pointerY, charm);
+    const overHanger = Array.from(hangerStack.children).some((part) => (
+      isPointInElement(pointerX, pointerY, part)
+    ));
+    const threadBottomX = state.physics.x + state.charmSize.width / 2;
+    const threadBottomY = state.physics.y + state.attachmentOffset;
+    const overThread = !state.undangled
+      && distancePointToSegment(pointerX, pointerY, anchor.x, anchor.y, threadBottomX, threadBottomY) <= 8;
+    const overMenu = !menu.classList.contains('hidden') && isPointInElement(pointerX, pointerY, menu);
+    const overSubmenu = !submenu.classList.contains('hidden') && isPointInElement(pointerX, pointerY, submenu);
+    const interactive = state.draggingCharm || overCharm || overHanger || overThread || overMenu || overSubmenu;
+    await setOverlayInteractive(interactive);
+  }
+
   charm.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     placeMenu(event.clientX, event.clientY);
@@ -729,8 +899,57 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     void setOverlayInteractive(true);
   });
 
+  const otherMenuItems = [
+    menuUndangle.btn,
+    menuRitual.btn,
+    menuGallery.btn,
+    menuSettings.btn,
+    menuUpdates.btn,
+    menuQuit.btn,
+  ];
+
+  for (const item of otherMenuItems) {
+    item.addEventListener('mouseenter', () => {
+      menuChoose.btn.classList.remove('active');
+      submenu.classList.add('hidden');
+    });
+  }
+
+  menuChoose.btn.addEventListener('mouseenter', () => {
+    menuChoose.btn.classList.add('active');
+    renderSubmenuCharms();
+    submenu.classList.remove('hidden');
+  });
+
+  menuChoose.btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = submenu.classList.contains('hidden');
+    if (isHidden) {
+      menuChoose.btn.classList.add('active');
+      renderSubmenuCharms();
+      submenu.classList.remove('hidden');
+    } else {
+      menuChoose.btn.classList.remove('active');
+      submenu.classList.add('hidden');
+    }
+  });
+
+  menu.addEventListener('mouseleave', (e) => {
+    const toElement = e.relatedTarget as Node | null;
+    if (toElement && (submenu.contains(toElement) || menu.contains(toElement))) return;
+    menuChoose.btn.classList.remove('active');
+    submenu.classList.add('hidden');
+  });
+
+  submenu.addEventListener('mouseleave', (e) => {
+    const toElement = e.relatedTarget as Node | null;
+    if (toElement && (menu.contains(toElement) || submenu.contains(toElement))) return;
+    menuChoose.btn.classList.remove('active');
+    submenu.classList.add('hidden');
+  });
+
   app.addEventListener('click', (event) => {
-    if (event.target instanceof Node && menu.contains(event.target)) return;
+    if (event.target instanceof Node && (menu.contains(event.target) || submenu.contains(event.target))) return;
     closeMenu();
   });
 
@@ -749,65 +968,62 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     layoutCharm();
   });
 
-  menuUndangle.addEventListener('click', async () => {
+  menuUndangle.btn.addEventListener('click', async () => {
     closeMenu();
     const undangled = await api.toggleUndangle();
     state.undangled = undangled;
-    menuUndangle.textContent = undangled ? 'Redangle' : 'Undangle';
+    menuUndangle.labelSpan.textContent = undangled ? 'Redangle' : 'Undangle';
     if (!undangled) {
       state.physics.targetX = anchor.x - state.charmSize.width / 2;
       state.physics.targetY = 152;
+      triggerDropAnimation();
     }
   });
 
-  menuRitual.addEventListener('click', async () => {
+  menuRitual.btn.addEventListener('click', async () => {
     closeMenu();
     await api.triggerRitual();
   });
 
-  menuChoose.addEventListener('click', async () => {
+  menuGallery.btn.addEventListener('click', async () => {
     closeMenu();
     await api.setGalleryOpen(true);
   });
 
-  menuGallery.addEventListener('click', async () => {
-    closeMenu();
-    await api.setGalleryOpen(true);
-  });
-
-  menuSettings.addEventListener('click', async () => {
+  menuSettings.btn.addEventListener('click', async () => {
     closeMenu();
     await api.openSettings();
   });
 
-  menuUpdates.addEventListener('click', async () => {
+  menuUpdates.btn.addEventListener('click', async () => {
     closeMenu();
     const status = updateDownloaded
       ? await api.installUpdate()
       : updateAvailable ? await api.downloadUpdate() : await api.checkUpdates();
     updateAvailable = status.status === 'available';
     updateDownloaded = status.status === 'downloaded';
-    menuUpdates.textContent = updateDownloaded
+    menuUpdates.labelSpan.textContent = updateDownloaded
       ? 'Restart to install update'
       : updateAvailable ? 'Download update' : 'Check for updates';
     showToast(status.message);
   });
 
-  menuQuit.addEventListener('click', async () => {
+  menuQuit.btn.addEventListener('click', async () => {
     closeMenu();
     await api.quitApp();
   });
 
   api.onCharmsUpdated((items) => {
+    allCharms = items;
     if (!state.selected && items.length > 0) {
       state.selected = items[0] ?? null;
-      renderSelected();
+      renderSelected(true);
     }
   });
 
   api.onCharmSelected((item) => {
     state.selected = item;
-    renderSelected();
+    renderSelected(true);
   });
 
   api.onGalleryUpdated((_isOpen) => {
@@ -816,7 +1032,7 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
 
   api.onRitualTriggered((item) => {
     state.selected = item;
-    renderSelected();
+    renderSelected(false);
     charm.animate(
       [
         { transform: 'translateY(0px) rotate(0deg)' },
