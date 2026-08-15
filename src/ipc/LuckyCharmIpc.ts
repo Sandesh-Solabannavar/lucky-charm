@@ -2,8 +2,13 @@ import { ipcMain } from 'electron';
 import { LuckyCharmApp } from '../app/LuckyCharmApp';
 import { DesktopCommands } from '../app/DesktopCommands';
 import { ElectronApp } from '../electron/ElectronApp';
-import { DesktopSettingsStore } from '../settings/DesktopSettingsStore';
+import {
+  DRAG_BOUNDARY_MAX,
+  DRAG_BOUNDARY_MIN,
+  DesktopSettingsStore,
+} from '../settings/DesktopSettingsStore';
 import { IPC_CHANNEL, IPC_EVENT } from './channels';
+import { isBoolean, isCompactOverlaySize, isFiniteNumberInRange, isIntegerInRange } from './validation';
 
 export class LuckyCharmIpc {
   constructor(
@@ -17,6 +22,7 @@ export class LuckyCharmIpc {
     ipcMain.handle(IPC_CHANNEL.getCharms, () => this.app.getAll());
 
     ipcMain.handle(IPC_CHANNEL.selectCharm, (_event, charmId: string) => {
+      if (typeof charmId !== 'string' || charmId.length === 0 || charmId.length > 100) return undefined;
       return this.commands.selectCharm(charmId);
     });
 
@@ -29,7 +35,8 @@ export class LuckyCharmIpc {
     });
 
     ipcMain.handle(IPC_CHANNEL.setGalleryOpen, (_event, open: boolean) => {
-      return this.commands.setGalleryOpen(Boolean(open));
+      if (!isBoolean(open)) return false;
+      return this.commands.setGalleryOpen(open);
     });
 
     ipcMain.handle(IPC_CHANNEL.triggerRitual, () => {
@@ -37,19 +44,23 @@ export class LuckyCharmIpc {
     });
 
     ipcMain.handle(IPC_CHANNEL.moveWindow, (_event, deltaX: number, deltaY: number) => {
-      this.commands.moveCharm(Number(deltaX) || 0, Number(deltaY) || 0);
+      if (!isFiniteNumberInRange(deltaX, -10_000, 10_000) || !isFiniteNumberInRange(deltaY, -10_000, 10_000)) {
+        return false;
+      }
+      this.commands.moveCharm(deltaX, deltaY);
       return true;
     });
 
     ipcMain.handle(IPC_CHANNEL.setOverlayInteractive, (_event, interactive: boolean) => {
-      this.commands.setOverlayInteractive(Boolean(interactive));
+      if (!isBoolean(interactive)) return false;
+      this.commands.setOverlayInteractive(interactive);
       return true;
     });
 
     ipcMain.handle(IPC_CHANNEL.getDragBoundary, () => this.settingsStore.get().dragBoundary);
 
     ipcMain.handle(IPC_CHANNEL.setDragBoundary, (_event, dragBoundary: unknown) => {
-      if (typeof dragBoundary !== 'number' || !Number.isFinite(dragBoundary)) {
+      if (!isIntegerInRange(dragBoundary, DRAG_BOUNDARY_MIN, DRAG_BOUNDARY_MAX)) {
         return this.settingsStore.get().dragBoundary;
       }
       const next = this.settingsStore.update({ dragBoundary }).dragBoundary;
@@ -60,7 +71,7 @@ export class LuckyCharmIpc {
     ipcMain.handle(IPC_CHANNEL.getFullDesktopOverlay, () => this.settingsStore.get().fullDesktopOverlay);
 
     ipcMain.handle(IPC_CHANNEL.setFullDesktopOverlay, (_event, enabled: unknown) => {
-      if (typeof enabled !== 'boolean') {
+      if (!isBoolean(enabled)) {
         return this.settingsStore.get().fullDesktopOverlay;
       }
       const next = this.settingsStore.update({ fullDesktopOverlay: enabled }).fullDesktopOverlay;
@@ -72,14 +83,10 @@ export class LuckyCharmIpc {
     ipcMain.handle(IPC_CHANNEL.getCompactOverlaySize, () => this.settingsStore.get().compactOverlaySize);
 
     ipcMain.handle(IPC_CHANNEL.setCompactOverlaySize, (_event, size: unknown) => {
-      if (!size || typeof size !== 'object') {
+      if (!isCompactOverlaySize(size)) {
         return this.settingsStore.get().compactOverlaySize;
       }
-      const { width, height } = size as { width?: unknown; height?: unknown };
-      if (typeof width !== 'number' || !Number.isFinite(width) || typeof height !== 'number' || !Number.isFinite(height)) {
-        return this.settingsStore.get().compactOverlaySize;
-      }
-      const next = this.settingsStore.update({ compactOverlaySize: { width, height } }).compactOverlaySize;
+      const next = this.settingsStore.update({ compactOverlaySize: size }).compactOverlaySize;
       this.commands.setCompactOverlaySize(next);
       this.commands.notify(IPC_EVENT.compactOverlaySizeUpdated, next);
       return next;
