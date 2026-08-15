@@ -247,11 +247,53 @@ html, body {
   background: #9f7b40;
 }
 .card-charm-container {
+  position: relative;
   width: 52px;
   height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.card-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.card-layer.maneki-arm {
+  transform-origin: 18% 62.5%;
+}
+.card-layer.scarab-wings {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+.card-daruma-eyes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.card-daruma-pupil {
+  position: absolute;
+  width: 13.5%;
+  height: 13.5%;
+  background: #111111;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+}
+.card-daruma-pupil.left {
+  left: 37.2%;
+  top: 36.4%;
+}
+.card-daruma-pupil.right {
+  left: 61.0%;
+  top: 36.7%;
+}
+.card-daruma-pupil.painted {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 .card-emoji {
   font-size: 38px;
@@ -455,7 +497,7 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
   const titleGroup = make('div', 'title-group');
   const titleLogo = make('span', 'title-logo', '🧿');
   const title = make('span', 'title', 'Lucky Charm');
-  const versionBadge = make('span', 'version-badge', 'v0.1.0');
+  const versionBadge = make('span', 'version-badge', 'v0.2.0');
   titleGroup.append(titleLogo, title, versionBadge);
   head.append(titleGroup);
 
@@ -633,6 +675,20 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
         image.src = charm.art.src;
         image.alt = charm.name;
         charmContainer.append(image);
+
+        if (charm.layerAsset) {
+          const layer = make('img', `card-layer ${charm.id === 'maneki-neko' ? 'maneki-arm' : charm.id === 'scarab' ? 'scarab-wings' : ''}`) as HTMLImageElement;
+          layer.src = charm.layerAsset;
+          charmContainer.append(layer);
+        }
+
+        if (charm.id === 'daruma') {
+          const eyesLayer = make('div', 'card-daruma-eyes');
+          const eyeL = make('div', `card-daruma-pupil left${(charm.darumaEyes ?? 0) >= 1 ? ' painted' : ''}`);
+          const eyeR = make('div', `card-daruma-pupil right${(charm.darumaEyes ?? 0) >= 2 ? ' painted' : ''}`);
+          eyesLayer.append(eyeL, eyeR);
+          charmContainer.append(eyesLayer);
+        }
       } else {
         const emoji = make('div', 'card-emoji', charm.art.glyph);
         charmContainer.append(emoji);

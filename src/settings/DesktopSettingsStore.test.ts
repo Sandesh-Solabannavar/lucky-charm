@@ -19,6 +19,8 @@ describe('DesktopSettingsStore', () => {
     const store = new DesktopSettingsStore(tempDir);
     const settings = store.load();
     expect(settings.selectedCharmId).toBe('nazar');
+    expect(settings.customEmojiGlyph).toBe('🍀');
+    expect(settings.darumaEyes).toBe(0);
     expect(settings.fullDesktopOverlay).toBe(true);
     expect(settings.compactOverlaySize).toEqual({ width: 420, height: 760 });
   });
@@ -45,5 +47,19 @@ describe('DesktopSettingsStore', () => {
     const reloaded = store2.load();
     expect(reloaded.fullDesktopOverlay).toBe(false);
     expect(reloaded.compactOverlaySize).toEqual({ width: 500, height: 800 });
+  });
+
+  it('persists customEmojiGlyph and darumaEyes', () => {
+    const store1 = new DesktopSettingsStore(tempDir);
+    store1.load();
+    store1.update({
+      customEmojiGlyph: '🦉',
+      darumaEyes: 1,
+    });
+
+    const store2 = new DesktopSettingsStore(tempDir);
+    const reloaded = store2.load();
+    expect(reloaded.customEmojiGlyph).toBe('🦉');
+    expect(reloaded.darumaEyes).toBe(1);
   });
 });

@@ -46,6 +46,7 @@ const electronApi: PreloadElectronApi = {
   getCompactOverlaySize: () => ipcRenderer.invoke(IPC_CHANNEL.getCompactOverlaySize) as Promise<{ width: number; height: number }>,
   setCompactOverlaySize: (size: { width: number; height: number }) => ipcRenderer.invoke(IPC_CHANNEL.setCompactOverlaySize, size) as Promise<{ width: number; height: number }>,
   toggleUndangle: () => ipcRenderer.invoke(IPC_CHANNEL.toggleUndangle) as Promise<boolean>,
+  setCustomEmoji: (glyph: string) => ipcRenderer.invoke(IPC_CHANNEL.setCustomEmoji, glyph) as Promise<Charm>,
   openSettings: () => ipcRenderer.invoke(IPC_CHANNEL.openSettings) as Promise<boolean>,
   checkUpdates: () => ipcRenderer.invoke(IPC_CHANNEL.checkUpdates) as Promise<{ status: string; message: string; version: string }>,
   downloadUpdate: () => ipcRenderer.invoke(IPC_CHANNEL.downloadUpdate) as Promise<{ status: string; message: string; version: string }>,
@@ -118,6 +119,7 @@ declare global {
       getCompactOverlaySize: () => Promise<{ width: number; height: number }>;
       setCompactOverlaySize: (size: { width: number; height: number }) => Promise<{ width: number; height: number }>;
       toggleUndangle: () => Promise<boolean>;
+      setCustomEmoji: (glyph: string) => Promise<Charm>;
       openSettings: () => Promise<boolean>;
       checkUpdates: () => Promise<{ status: string; message: string; version: string }>;
       downloadUpdate: () => Promise<{ status: string; message: string; version: string }>;

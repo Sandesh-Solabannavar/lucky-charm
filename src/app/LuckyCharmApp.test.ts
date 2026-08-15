@@ -28,4 +28,40 @@ describe('LuckyCharmApp', () => {
     const app = new LuckyCharmApp('custom');
     expect(app.getSelected().id).toBe('emoji');
   });
+
+  it('rotates Daruma eyes and ritual text through the wishing cycle', () => {
+    const app = new LuckyCharmApp('daruma');
+    expect(app.getSelected().darumaEyes).toBe(0);
+    expect(app.getSelected().ritual).toBe('Make a wish');
+
+    app.performRitual();
+    expect(app.getSelected().darumaEyes).toBe(1);
+    expect(app.getSelected().ritual).toBe('Wish granted');
+
+    app.performRitual();
+    expect(app.getSelected().darumaEyes).toBe(2);
+    expect(app.getSelected().ritual).toBe('Make a wish');
+
+    app.performRitual();
+    expect(app.getSelected().darumaEyes).toBe(0);
+    expect(app.getSelected().ritual).toBe('Make a wish');
+  });
+
+  it('supports custom emoji glyphs', () => {
+    const app = new LuckyCharmApp('emoji', undefined, '✨');
+    const art1 = app.getSelected().art;
+    expect(art1.type === 'emoji' ? art1.glyph : '').toBe('✨');
+
+    app.setCustomEmoji('🚀');
+    const art2 = app.getSelected().art;
+    expect(art2.type === 'emoji' ? art2.glyph : '').toBe('🚀');
+  });
+
+  it('includes layerAsset for maneki-neko and scarab', () => {
+    const app = new LuckyCharmApp('maneki-neko');
+    expect(app.getSelected().layerAsset).toBeDefined();
+
+    app.select('scarab');
+    expect(app.getSelected().layerAsset).toBeDefined();
+  });
 });

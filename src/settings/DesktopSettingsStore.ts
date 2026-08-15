@@ -10,6 +10,8 @@ export type ShortcutConfig = {
 export type AppSettings = {
   version: number;
   selectedCharmId: string;
+  customEmojiGlyph: string;
+  darumaEyes: number;
   charmPositions: Record<string, number>;
   visible: boolean;
   launchAtStartup: boolean;
@@ -36,6 +38,8 @@ export const COMPACT_OVERLAY_MAX_HEIGHT = 2160;
 const defaultSettings: AppSettings = {
   version: 1,
   selectedCharmId: 'nazar',
+  customEmojiGlyph: '🍀',
+  darumaEyes: 0,
   charmPositions: {},
   visible: true,
   launchAtStartup: false,
@@ -78,6 +82,12 @@ function normalizeSettings(value: unknown): AppSettings {
     ...defaultSettings,
     version: defaultSettings.version,
     selectedCharmId: typeof parsed.selectedCharmId === 'string' ? parsed.selectedCharmId : defaultSettings.selectedCharmId,
+    customEmojiGlyph: typeof parsed.customEmojiGlyph === 'string' && parsed.customEmojiGlyph.trim().length > 0
+      ? parsed.customEmojiGlyph.trim()
+      : defaultSettings.customEmojiGlyph,
+    darumaEyes: isFiniteNumber(parsed.darumaEyes) && [0, 1, 2].includes(parsed.darumaEyes)
+      ? parsed.darumaEyes
+      : defaultSettings.darumaEyes,
     charmPositions: positions,
     visible: typeof parsed.visible === 'boolean' ? parsed.visible : defaultSettings.visible,
     launchAtStartup: typeof parsed.launchAtStartup === 'boolean' ? parsed.launchAtStartup : defaultSettings.launchAtStartup,

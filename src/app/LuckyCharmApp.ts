@@ -93,9 +93,10 @@ const baseCharms: Charm[] = [
     ritual: 'Beckon good fortune',
     art: {
       type: 'image',
-      src: websiteAsset('/charms/maneki-neko.png'),
+      src: websiteAsset('/charms/maneki-body.png'),
       frame: [64, 84],
     },
+    layerAsset: websiteAsset('/charms/maneki-arm.png'),
     accent: '#ffc76a',
     glow: '#dca550',
   },
@@ -125,6 +126,7 @@ const baseCharms: Charm[] = [
       src: websiteAsset('/charms/scarab.png'),
       frame: [140, 107],
     },
+    layerAsset: websiteAsset('/charms/scarab-wings.png'),
     accent: '#ff9aad',
     glow: '#dd6f8d',
   },
@@ -162,11 +164,20 @@ export class LuckyCharmApp {
   private selectedVariantIndexByCharm = new Map<string, number>();
   private galleryOpen = false;
   private undangled = false;
+  private customEmoji = '🍀';
+  private darumaEyes = 0;
   private readonly charms: Charm[];
   private readonly charmVariants: Record<string, Array<Partial<Charm>>>;
 
-  constructor(initialSelectedId?: string, assetsDirectory?: string) {
+  constructor(
+    initialSelectedId?: string,
+    assetsDirectory?: string,
+    initialCustomEmoji = '🍀',
+    initialDarumaEyes = 0,
+  ) {
     const assetsDir = assetsDirectory ?? path.resolve(process.cwd(), 'assets', 'charms');
+    this.customEmoji = initialCustomEmoji.trim() || '🍀';
+    this.darumaEyes = [0, 1, 2].includes(initialDarumaEyes) ? initialDarumaEyes : 0;
     this.charms = baseCharms.map((charm) => this.localizeCharm(charm, assetsDir));
     this.charmVariants = Object.fromEntries(
       Object.entries(baseCharmVariants).map(([charmId, variants]) => [
@@ -174,6 +185,11 @@ export class LuckyCharmApp {
         variants.map((variant) => this.localizeVariant(variant, assetsDir)),
       ]),
     );
+
+    const emojiCharm = this.charms.find((c) => c.id === 'emoji');
+    if (emojiCharm && emojiCharm.art.type === 'emoji') {
+      emojiCharm.art.glyph = this.customEmoji;
+    }
 
     const resolvedInitial = initialSelectedId ? (idAliases[initialSelectedId] ?? initialSelectedId) : undefined;
     const validInitial = resolvedInitial && this.charms.some((charm) => charm.id === resolvedInitial)
@@ -183,13 +199,21 @@ export class LuckyCharmApp {
   }
 
   private localizeCharm(charm: Charm, assetsDir: string): Charm {
-    if (charm.art.type !== 'image') {
-      return charm;
-    }
-
     const hangerAsset = charm.hangerAsset
       ? this.toLocalAssetSource(charm.hangerAsset, assetsDir)
       : undefined;
+    const layerAsset = charm.layerAsset
+      ? this.toLocalAssetSource(charm.layerAsset, assetsDir)
+      : undefined;
+
+    if (charm.art.type !== 'image') {
+      return {
+        ...charm,
+        ...(hangerAsset ? { hangerAsset } : {}),
+        ...(layerAsset ? { layerAsset } : {}),
+      };
+    }
+
     return {
       ...charm,
       art: {
@@ -197,6 +221,7 @@ export class LuckyCharmApp {
         src: this.toLocalAssetSource(charm.art.src, assetsDir),
       },
       ...(hangerAsset ? { hangerAsset } : {}),
+      ...(layerAsset ? { layerAsset } : {}),
     };
   }
 
@@ -230,6 +255,14 @@ export class LuckyCharmApp {
   }
 
   private withVariant(charm: Charm): Charm {
+    if (charm.id === 'daruma') {
+      return {
+        ...charm,
+        darumaEyes: this.darumaEyes,
+        ritual: this.darumaEyes === 1 ? 'Wish granted' : 'Make a wish',
+      };
+    }
+
     const variants = this.charmVariants[charm.id];
     if (!variants || variants.length === 0) return charm;
     const index = this.selectedVariantIndexByCharm.get(charm.id) ?? 0;
@@ -244,7 +277,7 @@ export class LuckyCharmApp {
   }
 
   getAll() {
-    return this.charms;
+    return this.charms.map((c) => this.withVariant(c));
   }
 
   getSelected() {
@@ -260,8 +293,34 @@ export class LuckyCharmApp {
     return this.withVariant(match);
   }
 
+  setCustomEmoji(glyph: string) {
+    const trimmed = glyph.trim();
+    if (trimmed.length > 0) {
+      this.customEmoji = trimmed;
+      const emojiCharm = this.charms.find((c) => c.id === 'emoji');
+      if (emojiCharm && emojiCharm.art.type === 'emoji') {
+        emojiCharm.art.glyph = trimmed;
+      }
+    }
+    return this.getSelected();
+  }
+
+  getCustomEmoji() {
+    return this.customEmoji;
+  }
+
+  getDarumaEyes() {
+    return this.darumaEyes;
+  }
+
   performRitual() {
     const selected = this.charms.find((charm) => charm.id === this.selectedId) ?? this.charms[0]!;
+
+    if (selected.id === 'daruma') {
+      this.darumaEyes = (this.darumaEyes + 1) % 3;
+      return this.withVariant(selected);
+    }
+
     const variants = this.charmVariants[selected.id];
     if (!variants || variants.length <= 1) {
       return this.withVariant(selected);

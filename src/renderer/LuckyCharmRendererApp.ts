@@ -11,6 +11,7 @@ export type RendererElectronApi = {
   getCharms: () => Promise<Charm[]>;
   getSelectedCharm: () => Promise<Charm>;
   selectCharm: (id: string) => Promise<Charm | undefined>;
+  setCustomEmoji: (glyph: string) => Promise<Charm>;
   toggleWindow: () => Promise<boolean>;
   toggleGallery: () => Promise<boolean>;
   setGalleryOpen: (open: boolean) => Promise<boolean>;
@@ -130,6 +131,52 @@ body {
   object-fit: contain;
   pointer-events: none;
   filter: drop-shadow(0 4px 14px rgba(0,0,0,0.3));
+}
+.charm-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.charm-layer.maneki-arm {
+  transform-origin: 18% 62.5%;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+.charm-layer.scarab-wings {
+  opacity: 0;
+  transform: scale(0.9);
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 0 14px rgba(255, 154, 173, 0.75));
+}
+.daruma-eyes-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.daruma-pupil {
+  position: absolute;
+  width: 13.5%;
+  height: 13.5%;
+  background: #111111;
+  border-radius: 999px;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+.daruma-pupil.left {
+  left: 37.2%;
+  top: 36.4%;
+}
+.daruma-pupil.right {
+  left: 61.0%;
+  top: 36.7%;
+}
+.daruma-pupil.painted {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 .charm-emoji {
   display: block;
@@ -307,6 +354,79 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.emoji-dialog {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 290px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(13, 17, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 24px rgba(59, 130, 246, 0.25);
+  backdrop-filter: blur(24px) saturate(1.2);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.emoji-dialog.hidden { display: none; }
+.emoji-dialog-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+.emoji-dialog-help {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin: -6px 0 2px;
+}
+.emoji-dialog-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(8, 12, 22, 0.85);
+  color: #f8fafc;
+  font-size: 24px;
+  text-align: center;
+  outline: none;
+  font-family: inherit;
+}
+.emoji-dialog-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+.emoji-dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.emoji-dialog-btn {
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 0;
+  transition: all 0.12s ease;
+}
+.emoji-dialog-btn.cancel {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+.emoji-dialog-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.emoji-dialog-btn.primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+.emoji-dialog-btn.primary:hover {
+  background: #1d4ed8;
+}
 `;
 
 function make<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string) {
@@ -434,8 +554,18 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   const charm = make('div', 'charm');
   const charmImage = make('img', 'charm-image') as HTMLImageElement;
   charmImage.alt = 'Charm';
+  const charmLayer = make('img', 'charm-layer') as HTMLImageElement;
+  charmLayer.alt = '';
+  charmLayer.style.display = 'none';
+
+  const darumaEyesLayer = make('div', 'daruma-eyes-layer');
+  darumaEyesLayer.style.display = 'none';
+  const darumaPupilLeft = make('div', 'daruma-pupil left');
+  const darumaPupilRight = make('div', 'daruma-pupil right');
+  darumaEyesLayer.append(darumaPupilLeft, darumaPupilRight);
+
   const charmEmoji = make('div', 'charm-emoji');
-  charm.append(charmImage, charmEmoji);
+  charm.append(charmImage, charmLayer, darumaEyesLayer, charmEmoji);
 
   const charmName = make('div', 'charm-name', 'Nazar boncugu');
   const tip = make('div', 'tip', 'Right click the charm for options');
@@ -498,7 +628,21 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
 
   const submenu = make('div', 'submenu hidden');
 
-  app.append(home, menu, submenu);
+  const emojiDialog = make('div', 'emoji-dialog hidden');
+  const emojiDialogTitle = make('div', 'emoji-dialog-title', 'Pick a Lucky Emoji');
+  const emojiDialogHelp = make('div', 'emoji-dialog-help', 'Type or paste an emoji to hang on your screen.');
+  const emojiDialogInput = make('input', 'emoji-dialog-input') as HTMLInputElement;
+  emojiDialogInput.type = 'text';
+  emojiDialogInput.maxLength = 8;
+  emojiDialogInput.placeholder = '🍀';
+
+  const emojiDialogActions = make('div', 'emoji-dialog-actions');
+  const emojiDialogCancel = make('button', 'emoji-dialog-btn cancel', 'Cancel');
+  const emojiDialogSubmit = make('button', 'emoji-dialog-btn primary', 'Hang Emoji');
+  emojiDialogActions.append(emojiDialogCancel, emojiDialogSubmit);
+  emojiDialog.append(emojiDialogTitle, emojiDialogHelp, emojiDialogInput, emojiDialogActions);
+
+  app.append(home, menu, submenu, emojiDialog);
   document.body.append(app);
 
   const anchor = { x: 260, y: 0 };
@@ -602,45 +746,6 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     updateThreadVisual();
   }
 
-  function placeMenu(clientX: number, clientY: number) {
-    const maxX = window.innerWidth - 292;
-    const maxY = window.innerHeight - 320;
-    const x = Math.max(8, Math.min(maxX, clientX));
-    const y = Math.max(8, Math.min(maxY, clientY));
-    menu.style.left = `${x}px`;
-    menu.style.top = `${y}px`;
-  }
-
-  function closeMenu() {
-    menu.classList.add('hidden');
-    void syncOverlayInteractivity(window.innerWidth + 1000, window.innerHeight + 1000);
-  }
-
-  async function setOverlayInteractive(nextInteractive: boolean) {
-    if (state.overlayInteractive === nextInteractive) return;
-    state.overlayInteractive = nextInteractive;
-    await api.setOverlayInteractive(nextInteractive);
-  }
-
-  function isPointInElement(x: number, y: number, element: Element): boolean {
-    const rect = element.getBoundingClientRect();
-    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-  }
-
-  async function syncOverlayInteractivity(pointerX: number, pointerY: number) {
-    const overCharm = isPointInElement(pointerX, pointerY, charm);
-    const overHanger = Array.from(hangerStack.children).some((part) => (
-      isPointInElement(pointerX, pointerY, part)
-    ));
-    const threadBottomX = state.physics.x + state.charmSize.width / 2;
-    const threadBottomY = state.physics.y + state.attachmentOffset;
-    const overThread = !state.undangled
-      && distancePointToSegment(pointerX, pointerY, anchor.x, anchor.y, threadBottomX, threadBottomY) <= 8;
-    const overMenu = !menu.classList.contains('hidden') && isPointInElement(pointerX, pointerY, menu);
-    const interactive = state.draggingCharm || overCharm || overHanger || overThread || overMenu;
-    await setOverlayInteractive(interactive);
-  }
-
   function updateCharmVisual(charmData: Charm) {
     const [frameWidth, frameHeight] = charmData.art.frame;
     const fitScale = clamp(90 / Math.max(frameWidth, frameHeight), 0.78, 1.32);
@@ -655,11 +760,30 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
       charmImage.src = charmData.art.src;
       charmImage.style.display = 'block';
       charmEmoji.style.display = 'none';
+
+      if (charmData.layerAsset) {
+        charmLayer.src = charmData.layerAsset;
+        charmLayer.className = `charm-layer ${charmData.id === 'maneki-neko' ? 'maneki-arm' : charmData.id === 'scarab' ? 'scarab-wings' : ''}`;
+        charmLayer.style.display = 'block';
+      } else {
+        charmLayer.style.display = 'none';
+      }
+
+      if (charmData.id === 'daruma') {
+        darumaEyesLayer.style.display = 'block';
+        const eyes = charmData.darumaEyes ?? 0;
+        darumaPupilLeft.classList.toggle('painted', eyes >= 1);
+        darumaPupilRight.classList.toggle('painted', eyes >= 2);
+      } else {
+        darumaEyesLayer.style.display = 'none';
+      }
     } else {
       charmEmoji.textContent = charmData.art.glyph;
       charmEmoji.style.fontSize = `${Math.round(charmData.art.fontSize * 0.9)}px`;
       charmEmoji.style.display = 'block';
       charmImage.style.display = 'none';
+      charmLayer.style.display = 'none';
+      darumaEyesLayer.style.display = 'none';
     }
   }
 
@@ -888,9 +1012,49 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
       && distancePointToSegment(pointerX, pointerY, anchor.x, anchor.y, threadBottomX, threadBottomY) <= 8;
     const overMenu = !menu.classList.contains('hidden') && isPointInElement(pointerX, pointerY, menu);
     const overSubmenu = !submenu.classList.contains('hidden') && isPointInElement(pointerX, pointerY, submenu);
-    const interactive = state.draggingCharm || overCharm || overHanger || overThread || overMenu || overSubmenu;
+    const overEmojiDialog = !emojiDialog.classList.contains('hidden') && isPointInElement(pointerX, pointerY, emojiDialog);
+    const interactive = state.draggingCharm || overCharm || overHanger || overThread || overMenu || overSubmenu || overEmojiDialog;
     await setOverlayInteractive(interactive);
   }
+
+  function openEmojiPicker() {
+    emojiDialogInput.value = state.selected?.art.type === 'emoji' ? state.selected.art.glyph : '🍀';
+    emojiDialog.classList.remove('hidden');
+    void setOverlayInteractive(true);
+    setTimeout(() => {
+      emojiDialogInput.focus();
+      emojiDialogInput.select();
+    }, 40);
+  }
+
+  function closeEmojiPicker() {
+    emojiDialog.classList.add('hidden');
+    void syncOverlayInteractivity(-1, -1);
+  }
+
+  emojiDialogCancel.addEventListener('click', () => closeEmojiPicker());
+
+  emojiDialogSubmit.addEventListener('click', async () => {
+    const val = emojiDialogInput.value.trim();
+    if (val) {
+      await api.setCustomEmoji(val);
+      closeEmojiPicker();
+      triggerDropAnimation();
+    }
+  });
+
+  emojiDialogInput.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      const val = emojiDialogInput.value.trim();
+      if (val) {
+        await api.setCustomEmoji(val);
+        closeEmojiPicker();
+        triggerDropAnimation();
+      }
+    } else if (e.key === 'Escape') {
+      closeEmojiPicker();
+    }
+  });
 
   charm.addEventListener('contextmenu', (event) => {
     event.preventDefault();
@@ -949,7 +1113,7 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   });
 
   app.addEventListener('click', (event) => {
-    if (event.target instanceof Node && (menu.contains(event.target) || submenu.contains(event.target))) return;
+    if (event.target instanceof Node && (menu.contains(event.target) || submenu.contains(event.target) || emojiDialog.contains(event.target))) return;
     closeMenu();
   });
 
@@ -982,6 +1146,10 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
 
   menuRitual.btn.addEventListener('click', async () => {
     closeMenu();
+    if (state.selected?.id === 'emoji') {
+      openEmojiPicker();
+      return;
+    }
     await api.triggerRitual();
   });
 
@@ -1033,6 +1201,55 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
   api.onRitualTriggered((item) => {
     state.selected = item;
     renderSelected(false);
+
+    if (item.id === 'nimbu-mirchi') {
+      state.physics.vx = 0;
+      state.physics.vy = -1600;
+      state.physics.y = -state.charmSize.height - 80;
+      layoutCharm();
+      setTimeout(() => {
+        state.physics.x = anchor.x - state.charmSize.width / 2;
+        state.physics.y = -state.charmSize.height - 40;
+        state.physics.vx = (Math.random() - 0.5) * 40;
+        state.physics.vy = 650;
+      }, 350);
+      return;
+    }
+
+    if (item.id === 'maneki-neko') {
+      charmLayer.animate(
+        [
+          { transform: 'perspective(300px) rotateX(0deg) scale(1)' },
+          { transform: 'perspective(300px) rotateX(34deg) scaleY(0.92) scaleX(1.03)' },
+          { transform: 'perspective(300px) rotateX(0deg) scale(1)' },
+          { transform: 'perspective(300px) rotateX(34deg) scaleY(0.92) scaleX(1.03)' },
+          { transform: 'perspective(300px) rotateX(0deg) scale(1)' },
+          { transform: 'perspective(300px) rotateX(34deg) scaleY(0.92) scaleX(1.03)' },
+          { transform: 'perspective(300px) rotateX(0deg) scale(1)' },
+        ],
+        { duration: 1800, easing: 'ease-in-out' },
+      );
+      return;
+    }
+
+    if (item.id === 'scarab') {
+      charmLayer.animate(
+        [
+          { transform: 'scale(0.85)', opacity: 0 },
+          { transform: 'scale(1.22) translateY(-4px)', opacity: 1 },
+          { transform: 'scale(1.22) translateY(-4px)', opacity: 1 },
+          { transform: 'scale(0.95)', opacity: 0 },
+        ],
+        { duration: 2400, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      );
+      return;
+    }
+
+    if (item.id === 'daruma') {
+      showToast(item.darumaEyes === 1 ? 'Wish made! Left eye painted.' : item.darumaEyes === 2 ? 'Wish granted! Both eyes painted! ✨' : 'New goal set.');
+      return;
+    }
+
     charm.animate(
       [
         { transform: 'translateY(0px) rotate(0deg)' },
@@ -1046,10 +1263,11 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
 
   api.onUndangleUpdated((undangled) => {
     state.undangled = undangled;
-    menuUndangle.textContent = undangled ? 'Redangle' : 'Undangle';
+    menuUndangle.labelSpan.textContent = undangled ? 'Redangle' : 'Undangle';
     if (!undangled) {
       state.physics.targetX = anchor.x - state.charmSize.width / 2;
       state.physics.targetY = 152;
+      triggerDropAnimation();
     }
   });
 

@@ -29,6 +29,13 @@ export class DesktopCommands {
     return selected;
   }
 
+  setCustomEmoji(glyph: string): Charm {
+    const selected = this.charmApp.setCustomEmoji(glyph);
+    this.ports.broadcast(IPC_EVENT.charmsUpdated, this.charmApp.getAll());
+    this.persistAndPublishSelection(selected);
+    return selected;
+  }
+
   performRitual(): Charm {
     const selected = this.charmApp.performRitual();
     this.persistAndPublishSelection(selected);

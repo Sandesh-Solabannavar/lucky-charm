@@ -34,7 +34,12 @@ export async function runDesktopProgram() {
     const settings = settingsStore.load();
     const desktopUpdates = new DesktopUpdates(electronApp.metadata.isPackaged, electronApp.metadata.version);
     const charmAssetsDirectory = path.join(electronApp.metadata.appPath, 'assets', 'charms');
-    const luckyCharmApp = new LuckyCharmApp(settings.selectedCharmId, charmAssetsDirectory);
+    const luckyCharmApp = new LuckyCharmApp(
+      settings.selectedCharmId,
+      charmAssetsDirectory,
+      settings.customEmojiGlyph,
+      settings.darumaEyes,
+    );
 
     const primaryDisplay = screen.getPrimaryDisplay();
     const primaryDisplayId = String(primaryDisplay.id);
@@ -85,7 +90,13 @@ export async function runDesktopProgram() {
       openGalleryWindow: (tab) => galleryWindow.open(tab),
       closeGalleryWindow: () => galleryWindow.close(),
       refreshTray: () => desktopTray.refresh(),
-      persistSelectedCharm: (id) => settingsStore.setSelectedCharmId(id),
+      persistSelectedCharm: (id) => {
+        settingsStore.setSelectedCharmId(id);
+        settingsStore.update({
+          customEmojiGlyph: luckyCharmApp.getCustomEmoji(),
+          darumaEyes: luckyCharmApp.getDarumaEyes(),
+        });
+      },
       broadcast,
     });
 

@@ -98,6 +98,11 @@ export class LuckyCharmIpc {
       return next;
     });
 
+    ipcMain.handle(IPC_CHANNEL.setCustomEmoji, (_event, glyph: unknown) => {
+      if (typeof glyph !== 'string' || glyph.trim().length === 0 || glyph.length > 32) return undefined;
+      return this.commands.setCustomEmoji(glyph);
+    });
+
     ipcMain.handle(IPC_CHANNEL.toggleUndangle, () => {
       const undangled = this.app.toggleUndangled();
       this.commands.notify(IPC_EVENT.undangleUpdated, undangled);

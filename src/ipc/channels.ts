@@ -15,6 +15,7 @@ export const IPC_CHANNEL = {
   getCompactOverlaySize: 'get-compact-overlay-size',
   setCompactOverlaySize: 'set-compact-overlay-size',
   toggleUndangle: 'toggle-undangle',
+  setCustomEmoji: 'set-custom-emoji',
   openSettings: 'open-settings',
   checkUpdates: 'check-updates',
   downloadUpdate: 'download-update',
