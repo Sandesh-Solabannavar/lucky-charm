@@ -1,5 +1,6 @@
 export const IPC_CHANNEL = {
   getCharms: 'get-charms',
+  getSelectedCharm: 'get-selected-charm',
   selectCharm: 'select-charm',
   toggleWindow: 'toggle-window',
   toggleGallery: 'toggle-gallery',

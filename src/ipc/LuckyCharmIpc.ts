@@ -25,6 +25,8 @@ export class LuckyCharmIpc {
   install() {
     ipcMain.handle(IPC_CHANNEL.getCharms, () => this.app.getAll());
 
+    ipcMain.handle(IPC_CHANNEL.getSelectedCharm, () => this.app.getSelected());
+
     ipcMain.handle(IPC_CHANNEL.selectCharm, (_event, charmId: string) => {
       if (typeof charmId !== 'string' || charmId.length === 0 || charmId.length > 100) return undefined;
       return this.commands.selectCharm(charmId);

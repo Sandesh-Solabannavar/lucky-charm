@@ -11,6 +11,7 @@ import { DesktopCommands } from './DesktopCommands';
 import { DesktopTray } from './DesktopTray';
 import { DesktopUpdates } from '../updates/DesktopUpdates';
 import { DesktopLifecycle } from './DesktopLifecycle';
+import { IPC_EVENT } from '../ipc/channels';
 
 export async function runDesktopProgram() {
   const electronApp = new ElectronApp();
@@ -56,7 +57,7 @@ export async function runDesktopProgram() {
       (bounds) => settingsStore.setGalleryBounds(bounds),
       (open) => {
         luckyCharmApp.setGalleryOpen(open);
-        desktopWindow.sendToMain('gallery-updated', open);
+        desktopWindow.sendToMain(IPC_EVENT.galleryUpdated, open);
       },
     );
 
@@ -116,14 +117,14 @@ export async function runDesktopProgram() {
       desktopWindow.hideMain();
     }
     ipc.install();
-    desktopUpdates.start((status) => broadcast('update-status', status));
+    desktopUpdates.start((status) => broadcast(IPC_EVENT.updateStatus, status));
     lifecycle.register();
     handleExternalUrl = (url) => lifecycle.handleProtocolUrl(url);
     const startupProtocolUrl = process.argv.find((argument) => argument.startsWith('luckycharm://'));
     if (startupProtocolUrl) handleExternalUrl(startupProtocolUrl);
 
-    broadcast('charms-updated', luckyCharmApp.getAll());
-    broadcast('charm-selected', luckyCharmApp.getSelected());
+    broadcast(IPC_EVENT.charmsUpdated, luckyCharmApp.getAll());
+    broadcast(IPC_EVENT.charmSelected, luckyCharmApp.getSelected());
   } catch (error) {
     console.error('Lucky Charm failed to start:', error);
     electronApp.quit();

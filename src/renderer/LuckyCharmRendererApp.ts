@@ -8,6 +8,7 @@ type UpdateStatus = {
 
 export type RendererElectronApi = {
   getCharms: () => Promise<Charm[]>;
+  getSelectedCharm: () => Promise<Charm>;
   selectCharm: (id: string) => Promise<Charm | undefined>;
   toggleWindow: () => Promise<boolean>;
   toggleGallery: () => Promise<boolean>;
@@ -647,8 +648,11 @@ export function mountLuckyCharmRenderer(api: RendererElectronApi) {
     state.dragBoundary = await api.getDragBoundary();
     state.fullDesktopOverlay = await api.getFullDesktopOverlay();
     updateAnchorPosition();
-    const items = await api.getCharms();
-    state.selected = items[0] ?? null;
+    const [items, selected] = await Promise.all([
+      api.getCharms(),
+      api.getSelectedCharm(),
+    ]);
+    state.selected = selected ?? items[0] ?? null;
     renderSelected();
     layoutCharm();
     startPhysicsLoop();

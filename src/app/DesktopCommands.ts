@@ -1,5 +1,6 @@
 import type { Charm, GalleryTab } from '../shared/Charm';
 import { LuckyCharmApp } from './LuckyCharmApp';
+import { IPC_EVENT } from '../ipc/channels';
 
 export type DesktopCommandPorts = {
   setCharmVisible: () => boolean;
@@ -31,7 +32,7 @@ export class DesktopCommands {
   performRitual(): Charm {
     const selected = this.charmApp.performRitual();
     this.persistAndPublishSelection(selected);
-    this.ports.broadcast('ritual-triggered', selected);
+    this.ports.broadcast(IPC_EVENT.ritualTriggered, selected);
     return selected;
   }
 
@@ -63,12 +64,12 @@ export class DesktopCommands {
     this.charmApp.setGalleryOpen(open);
     if (open) {
       this.ports.openGalleryWindow(tab);
-      this.ports.broadcast('charms-updated', this.charmApp.getAll());
-      this.ports.broadcast('charm-selected', this.charmApp.getSelected());
+      this.ports.broadcast(IPC_EVENT.charmsUpdated, this.charmApp.getAll());
+      this.ports.broadcast(IPC_EVENT.charmSelected, this.charmApp.getSelected());
     } else {
       this.ports.closeGalleryWindow();
     }
-    this.ports.broadcast('gallery-updated', open);
+    this.ports.broadcast(IPC_EVENT.galleryUpdated, open);
     return open;
   }
 
@@ -79,6 +80,6 @@ export class DesktopCommands {
   private persistAndPublishSelection(selected: Charm) {
     this.ports.persistSelectedCharm(selected.id);
     this.ports.refreshTray();
-    this.ports.broadcast('charm-selected', selected);
+    this.ports.broadcast(IPC_EVENT.charmSelected, selected);
   }
 }

@@ -2,6 +2,7 @@ import type { Charm } from '../shared/Charm';
 
 export type GalleryRendererElectronApi = {
   getCharms: () => Promise<Charm[]>;
+  getSelectedCharm: () => Promise<Charm>;
   selectCharm: (id: string) => Promise<Charm | undefined>;
   setGalleryOpen: (open: boolean) => Promise<boolean>;
   getFullDesktopOverlay: () => Promise<boolean>;
@@ -379,13 +380,19 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
     renderCompactOverlaySize();
   });
 
-  void Promise.all([api.getCharms(), api.getFullDesktopOverlay(), api.getCompactOverlaySize()]).then(([
+  void Promise.all([
+    api.getCharms(),
+    api.getSelectedCharm(),
+    api.getFullDesktopOverlay(),
+    api.getCompactOverlaySize(),
+  ]).then(([
     charms,
+    selected,
     fullDesktopOverlay,
     compactOverlaySize,
   ]) => {
     state.charms = charms;
-    state.selected = charms[0] ?? null;
+    state.selected = selected ?? charms[0] ?? null;
     state.fullDesktopOverlay = fullDesktopOverlay;
     state.compactOverlaySize = compactOverlaySize;
     renderGrid();

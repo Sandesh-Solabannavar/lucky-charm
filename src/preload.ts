@@ -4,7 +4,7 @@ import {
   mountLuckyCharmGalleryRenderer,
   type GalleryRendererElectronApi,
 } from './renderer/LuckyCharmGalleryRendererApp';
-import { IPC_CHANNEL } from './ipc/channels';
+import { IPC_CHANNEL, IPC_EVENT } from './ipc/channels';
 
 type Charm = {
   id: string;
@@ -32,6 +32,7 @@ type PreloadElectronApi = RendererElectronApi & GalleryRendererElectronApi;
 
 const electronApi: PreloadElectronApi = {
   getCharms: () => ipcRenderer.invoke(IPC_CHANNEL.getCharms) as Promise<Charm[]>,
+  getSelectedCharm: () => ipcRenderer.invoke(IPC_CHANNEL.getSelectedCharm) as Promise<Charm>,
   selectCharm: (id: string) => ipcRenderer.invoke(IPC_CHANNEL.selectCharm, id) as Promise<Charm | undefined>,
   toggleWindow: () => ipcRenderer.invoke(IPC_CHANNEL.toggleWindow) as Promise<boolean>,
   toggleGallery: () => ipcRenderer.invoke(IPC_CHANNEL.toggleGallery) as Promise<boolean>,
@@ -51,40 +52,40 @@ const electronApi: PreloadElectronApi = {
   installUpdate: () => ipcRenderer.invoke(IPC_CHANNEL.installUpdate) as Promise<{ status: string; message: string; version: string }>,
   quitApp: () => ipcRenderer.invoke(IPC_CHANNEL.quitApp) as Promise<boolean>,
   onCharmsUpdated: (callback: (charms: Charm[]) => void) => {
-    ipcRenderer.on('charms-updated', (_event, charms) => callback(charms));
+    ipcRenderer.on(IPC_EVENT.charmsUpdated, (_event, charms) => callback(charms));
   },
   onCharmSelected: (callback: (charm: Charm) => void) => {
-    ipcRenderer.on('charm-selected', (_event, charm) => callback(charm));
+    ipcRenderer.on(IPC_EVENT.charmSelected, (_event, charm) => callback(charm));
   },
   onVisibleUpdated: (callback: (visible: boolean) => void) => {
-    ipcRenderer.on('visibility-updated', (_event, visible) => callback(Boolean(visible)));
+    ipcRenderer.on(IPC_EVENT.visibilityUpdated, (_event, visible) => callback(Boolean(visible)));
   },
   onGalleryUpdated: (callback: (isOpen: boolean) => void) => {
-    ipcRenderer.on('gallery-updated', (_event, isOpen) => callback(Boolean(isOpen)));
+    ipcRenderer.on(IPC_EVENT.galleryUpdated, (_event, isOpen) => callback(Boolean(isOpen)));
   },
   onRitualTriggered: (callback: (charm: Charm) => void) => {
-    ipcRenderer.on('ritual-triggered', (_event, charm) => callback(charm));
+    ipcRenderer.on(IPC_EVENT.ritualTriggered, (_event, charm) => callback(charm));
   },
   onUndangleUpdated: (callback: (undangled: boolean) => void) => {
-    ipcRenderer.on('undangle-updated', (_event, undangled) => callback(Boolean(undangled)));
+    ipcRenderer.on(IPC_EVENT.undangleUpdated, (_event, undangled) => callback(Boolean(undangled)));
   },
   onSettingsOpened: (callback: () => void) => {
-    ipcRenderer.on('settings-opened', () => callback());
+    ipcRenderer.on(IPC_EVENT.settingsOpened, () => callback());
   },
   onUpdateStatus: (callback: (status: { status: string; message: string; version: string }) => void) => {
-    ipcRenderer.on('update-status', (_event, status) => callback(status));
+    ipcRenderer.on(IPC_EVENT.updateStatus, (_event, status) => callback(status));
   },
   onGalleryTab: (callback: (tab: 'gallery' | 'general' | 'about') => void) => {
-    ipcRenderer.on('gallery-tab', (_event, tab) => callback(tab as 'gallery' | 'general' | 'about'));
+    ipcRenderer.on(IPC_EVENT.galleryTab, (_event, tab) => callback(tab as 'gallery' | 'general' | 'about'));
   },
   onDragBoundaryUpdated: (callback: (dragBoundary: number) => void) => {
-    ipcRenderer.on('drag-boundary-updated', (_event, dragBoundary) => callback(Number(dragBoundary)));
+    ipcRenderer.on(IPC_EVENT.dragBoundaryUpdated, (_event, dragBoundary) => callback(Number(dragBoundary)));
   },
   onFullDesktopOverlayUpdated: (callback: (enabled: boolean) => void) => {
-    ipcRenderer.on('full-desktop-overlay-updated', (_event, enabled) => callback(Boolean(enabled)));
+    ipcRenderer.on(IPC_EVENT.fullDesktopOverlayUpdated, (_event, enabled) => callback(Boolean(enabled)));
   },
   onCompactOverlaySizeUpdated: (callback: (size: { width: number; height: number }) => void) => {
-    ipcRenderer.on('compact-overlay-size-updated', (_event, size) => callback(size as { width: number; height: number }));
+    ipcRenderer.on(IPC_EVENT.compactOverlaySizeUpdated, (_event, size) => callback(size as { width: number; height: number }));
   },
 };
 
@@ -103,6 +104,7 @@ declare global {
   interface Window {
     electronAPI: {
       getCharms: () => Promise<Charm[]>;
+      getSelectedCharm: () => Promise<Charm>;
       selectCharm: (id: string) => Promise<Charm | undefined>;
       toggleWindow: () => Promise<boolean>;
       toggleGallery: () => Promise<boolean>;
