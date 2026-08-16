@@ -497,7 +497,7 @@ export function mountLuckyCharmGalleryRenderer(api: GalleryRendererElectronApi) 
   const titleGroup = make('div', 'title-group');
   const titleLogo = make('span', 'title-logo', '🧿');
   const title = make('span', 'title', 'Lucky Charm');
-  const versionBadge = make('span', 'version-badge', 'v0.2.0');
+  const versionBadge = make('span', 'version-badge', 'v0.2.1');
   titleGroup.append(titleLogo, title, versionBadge);
   head.append(titleGroup);
 
