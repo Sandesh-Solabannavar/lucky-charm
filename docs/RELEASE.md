@@ -37,10 +37,26 @@ The `.github/workflows/release.yml` workflow builds and publishes the artifacts.
 
 The current workflow produces unsigned artifacts when signing credentials are absent. This supports internal testing but is not suitable for broad public distribution.
 
+### Opening Unsigned macOS Builds (Gatekeeper)
+
+When an unsigned app is downloaded from GitHub on macOS, Gatekeeper flags it with a quarantine attribute and displays `"Lucky Charm is damaged and can't be opened. You should move it to the Trash"` or `"Apple cannot check it for malicious software"`.
+
+To open it on your Mac:
+
+1. **Terminal (Single command)**:
+   ```sh
+   xattr -cr "/Applications/Lucky Charm.app"
+   ```
+2. **Or via Finder**:
+   - Right-click (or Control-click) `Lucky Charm.app` in Finder -> select **Open** -> click **Open** in the dialog.
+   - Or open **System Settings > Privacy & Security**, scroll down to the Security section, and click **Open Anyway**.
+
+### Configuring Production Signing
+
 Before public distribution, configure these GitHub Actions secrets and update the release workflow to consume them:
 
 - Windows code-signing credentials and certificate profile.
-- macOS Developer ID certificate, certificate password, Apple API key, key ID, and issuer ID.
+- macOS Developer ID certificate (`CSC_LINK`, `CSC_KEY_PASSWORD`), Apple API key (`APPLE_API_KEY`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`), and `APPLE_TEAM_ID`.
 
 Keep `LUCKY_CHARM_UPDATE_REPOSITORY` unset until signing has been verified on each platform. This prevents unsigned builds from presenting a usable update path.
 

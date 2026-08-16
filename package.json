@@ -13,7 +13,7 @@
         "test": "vitest run",
         "check": "pnpm run typecheck && pnpm run test",
         "package": "pnpm run check && pnpm run build && electron-builder --publish never",
-        "dist:mac": "pnpm run package -- --mac dmg zip",
+        "dist:mac": "pnpm run package -- --mac dmg zip --arm64 --x64",
         "dist:win": "pnpm run package -- --win nsis",
         "dist:linux": "pnpm run package -- --linux AppImage",
         "release:smoke": "node scripts/release-smoke.mjs"
@@ -35,7 +35,10 @@
                 "dmg",
                 "zip"
             ],
-            "category": "public.app-category.productivity"
+            "category": "public.app-category.productivity",
+            "hardenedRuntime": true,
+            "entitlements": "build/entitlements.mac.plist",
+            "entitlementsInherit": "build/entitlements.mac.inherit.plist"
         },
         "win": {
             "target": [
